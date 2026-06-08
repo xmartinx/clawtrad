@@ -124,7 +124,7 @@ export const App: React.FC = () => {
 
       <footer className="app-footer">
         <p>
-          ClawTrad v0.1.1 — Paste an Irish tune. Choose a tuning. Get a
+          ClawTrad v0.2.1 — Paste an Irish tune. Choose a tuning. Get a
           clawhammer tab starting point.
         </p>
         <p className="footer-note">

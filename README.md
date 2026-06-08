@@ -6,7 +6,7 @@ Paste an Irish tune. Choose a tuning. Get a clawhammer tab starting point.
 
 ## Current Status
 
-**v0.2 — Rhythmic Tab Rendering Foundation.** SVG visual tab with rhythmic structure (notes, rests, barlines, drone markers). Plain-text tab fallback. Dynamic-programming arrangement engine. 143 tests.
+**v0.2.1 — Visual Tab Usability Pass.** SVG tab with multi-system line wrapping. Copy-to-clipboard. Print-friendly. Dynamic-programming arrangement engine. 156 tests.
 
 ## Quick Start
 

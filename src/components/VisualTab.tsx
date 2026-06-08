@@ -1,23 +1,13 @@
-/** Visual SVG tab rendering for ClawTrad v0.2.
+/** Visual SVG tab rendering for ClawTrad v0.2.1.
  *
- *  Renders a TabDocument as inline SVG with five horizontal string
- *  lines, fret numbers, barlines, rests, and drone markers.
+ *  Renders a TabDocument as inline SVG with multi-system wrapping.
+ *  Each system shows five horizontal string lines with labels,
+ *  fret numbers, barlines, rests, and drone markers.
  */
 
 import React from 'react';
-import type { TabDocument, TabMeasure } from '../music/tab/tabLayoutTypes';
-
-/* ── Layout constants ─────────────────────────────────────── */
-
-const STRING_SPACING = 22;       // px between string lines
-const LEFT_MARGIN = 36;          // px for string labels
-const TOP_MARGIN = 48;           // px for title/tuning line
-const BOTTOM_PAD = 16;
-const MEASURE_GAP = 10;          // px gap between measures
-const COL_WIDTH = 24;            // px per 1/8-note duration unit
-const FONT_SIZE = 12;
-const LABEL_FONT_SIZE = 13;
-const TITLE_FONT_SIZE = 15;
+import type { TabDocument } from '../music/tab/tabLayoutTypes';
+import { computeLayout, LAYOUT, type SystemLayout } from '../music/tab/tabLayout';
 
 /* ── Main component ───────────────────────────────────────── */
 
@@ -31,16 +21,15 @@ export const VisualTab: React.FC<VisualTabProps> = ({ document: doc }) => {
     return <p className="tab-empty">No tab data to display.</p>;
   }
 
-  const svgWidth = computeSvgWidth(measures);
-  const tabTop = TOP_MARGIN;
-  const tabHeight = STRING_SPACING * 4 + BOTTOM_PAD;
-  const svgHeight = tabTop + tabHeight;
-
-  // Tuning labels — extract from tuningId notation (e.g. "gDGBD")
-  // The notation is read left-to-right: 5th, 4th, 3rd, 2nd, 1st.
-  // We display top-to-bottom: 1st, 2nd, 3rd, 4th, 5th — so reverse.
+  const layout = computeLayout(doc);
   const stringLabels = tuningLabels(doc.tuningId);
   const isClawhammer = doc.mode === 'basic-clawhammer';
+
+  const svgWidth = layout.maxContentWidth + LAYOUT.LEFT_MARGIN + 12;
+  const systemContentHeight = LAYOUT.SYSTEM_HEIGHT;
+  const headerHeight = 48;
+  const systemTotalHeight = systemContentHeight + LAYOUT.SYSTEM_TOP_MARGIN;
+  const svgHeight = headerHeight + layout.systemCount * systemTotalHeight + 8;
 
   return (
     <div className="visual-tab">
@@ -48,191 +37,188 @@ export const VisualTab: React.FC<VisualTabProps> = ({ document: doc }) => {
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{ width: '100%', maxWidth: svgWidth, fontFamily: 'monospace' }}
       >
-        {/* Title */}
-        <text x={LEFT_MARGIN} y={18} fontSize={TITLE_FONT_SIZE} fontWeight="bold" fill="currentColor">
+        {/* Header — title and diagnostics */}
+        <text x={LAYOUT.LEFT_MARGIN} y={18} fontSize={15} fontWeight="bold" fill="currentColor">
           {doc.title} — {doc.tuningLabel} ({isClawhammer ? 'Clawhammer' : 'Melody'})
         </text>
-        <text x={LEFT_MARGIN} y={34} fontSize={FONT_SIZE} fill="var(--text-muted, #666)">
+        <text x={LAYOUT.LEFT_MARGIN} y={34} fontSize={12} fill="var(--text-muted, #666)">
           Key: {doc.key} &nbsp; Meter: {doc.meter} &nbsp;
           Notes: {diagnostics.noteCount} &nbsp;
           Rests: {diagnostics.restCount}
           {diagnostics.unplayableCount > 0 && `  ⚠ ${diagnostics.unplayableCount} unplayable`}
         </text>
 
-        {/* String labels */}
-        {stringLabels.map((label, s) => (
-          <text
-            key={`label-${s}`}
-            x={LEFT_MARGIN - 12}
-            y={tabTop + s * STRING_SPACING + 5}
-            fontSize={LABEL_FONT_SIZE}
-            fontWeight="bold"
-            fill="currentColor"
-            textAnchor="end"
-          >
-            {label}
-          </text>
-        ))}
-
-        {/* String lines */}
-        {[0, 1, 2, 3, 4].map((s) => (
-          <line
-            key={`string-${s}`}
-            x1={LEFT_MARGIN}
-            y1={tabTop + s * STRING_SPACING}
-            x2={svgWidth - 8}
-            y2={tabTop + s * STRING_SPACING}
-            stroke="currentColor"
-            strokeWidth={s === 4 ? 0.8 : 0.5}
-            opacity={s === 4 ? 0.5 : 0.35}
-          />
-        ))}
-
-        {/* Rendering measures */}
-        {renderMeasures(measures, LEFT_MARGIN, tabTop)}
+        {/* Render each system */}
+        {layout.systems.map((sys, si) => {
+          const sysY = headerHeight + si * systemTotalHeight;
+          return renderSystem(sys, si, stringLabels, sysY, svgWidth);
+        })}
       </svg>
 
       {/* Diagnostics summary */}
       <p className="tab-diag" style={{ fontSize: 12, color: 'var(--text-muted, #666)', marginTop: 4 }}>
         {diagnostics.measureCount} measure{diagnostics.measureCount !== 1 ? 's' : ''}
-        {doc.warnings.length > 0 && ` — ${doc.warnings.length} warning${doc.warnings.length !== 1 ? 's' : ''}`}
+        {' · '}{layout.systemCount} system{layout.systemCount !== 1 ? 's' : ''}
+        {doc.warnings.length > 0 && ` · ${doc.warnings.length} warning${doc.warnings.length !== 1 ? 's' : ''}`}
       </p>
     </div>
   );
 };
 
-/* ── Measure rendering ────────────────────────────────────── */
+/* ── System rendering ──────────────────────────────────────── */
 
-function renderMeasures(
-  measures: TabMeasure[],
-  leftMargin: number,
-  tabTop: number,
-): React.ReactNode[] {
-  const elements: React.ReactNode[] = [];
-  let x = leftMargin;
+function renderSystem(
+  sys: SystemLayout['systems'][0],
+  systemIndex: number,
+  stringLabels: string[],
+  y: number,
+  svgWidth: number,
+): React.ReactNode {
+  const rightEdge = svgWidth - 8;
 
-  for (let mi = 0; mi < measures.length; mi++) {
-    const measure = measures[mi];
-    if (mi > 0) {
-      // Barline
-      elements.push(
+  return (
+    <g key={`sys-${systemIndex}`}>
+      {/* String labels */}
+      {stringLabels.map((label, s) => (
+        <text
+          key={`sl-${systemIndex}-${s}`}
+          x={LAYOUT.LEFT_MARGIN - 12}
+          y={y + s * LAYOUT.STRING_SPACING + 5}
+          fontSize={13}
+          fontWeight="bold"
+          fill="currentColor"
+          textAnchor="end"
+        >
+          {label}
+        </text>
+      ))}
+
+      {/* String lines */}
+      {[0, 1, 2, 3, 4].map((s) => (
         <line
-          key={`bar-${mi}`}
-          x1={x}
-          y1={tabTop}
-          x2={x}
-          y2={tabTop + STRING_SPACING * 4}
+          key={`str-${systemIndex}-${s}`}
+          x1={LAYOUT.LEFT_MARGIN}
+          y1={y + s * LAYOUT.STRING_SPACING}
+          x2={rightEdge}
+          y2={y + s * LAYOUT.STRING_SPACING}
+          stroke="currentColor"
+          strokeWidth={s === 4 ? 0.8 : 0.5}
+          opacity={s === 4 ? 0.5 : 0.35}
+        />
+      ))}
+
+      {/* Barlines */}
+      {sys.barlines.map((bx, bi) => (
+        <line
+          key={`bar-${systemIndex}-${bi}`}
+          x1={LAYOUT.LEFT_MARGIN + bx}
+          y1={y}
+          x2={LAYOUT.LEFT_MARGIN + bx}
+          y2={y + LAYOUT.STRING_SPACING * 4}
           stroke="currentColor"
           strokeWidth={1.5}
-        />,
-      );
-      x += MEASURE_GAP;
-    }
+        />
+      ))}
 
-    for (let ei = 0; ei < measure.events.length; ei++) {
-      const evt = measure.events[ei];
-      const w = Math.max(evt.duration * COL_WIDTH * 8, 12); // scale: 1/8 = COL_WIDTH
-      const cx = x + w / 2;
+      {/* Events */}
+      {sys.events.map((evt, ei) => {
+        const cx = LAYOUT.LEFT_MARGIN + evt.x;
+        return renderEvent(evt, ei, systemIndex, cx, y);
+      })}
+    </g>
+  );
+}
 
-      switch (evt.kind) {
-        case 'note':
-          if (evt.stringIndex !== undefined && evt.fret !== undefined) {
-            elements.push(
-              <text
-                key={`n-${mi}-${ei}`}
-                x={cx}
-                y={tabTop + evt.stringIndex * STRING_SPACING + 5}
-                fontSize={FONT_SIZE}
-                fontWeight="bold"
-                fill="currentColor"
-                textAnchor="middle"
-              >
-                {evt.fret}
-              </text>,
-            );
-          }
-          break;
+/* ── Event rendering ───────────────────────────────────────── */
 
-        case 'drone':
-          elements.push(
-            <text
-              key={`d-${mi}-${ei}`}
-              x={cx}
-              y={tabTop + 4 * STRING_SPACING + 4}
-              fontSize={10}
-              fill="var(--text-muted, #999)"
-              textAnchor="middle"
-            >
-              d
-            </text>,
-          );
-          break;
+function renderEvent(
+  evt: { kind: string; fret?: number; stringIndex?: number },
+  eventIndex: number,
+  systemIndex: number,
+  cx: number,
+  y: number,
+): React.ReactNode {
+  const key = `ev-${systemIndex}-${eventIndex}`;
 
-        case 'rest':
-          elements.push(
-            <text
-              key={`r-${mi}-${ei}`}
-              x={cx}
-              y={tabTop + 2 * STRING_SPACING + 4}
-              fontSize={FONT_SIZE}
-              fill="var(--text-muted, #999)"
-              textAnchor="middle"
-            >
-              z
-            </text>,
-          );
-          break;
-
-        case 'skipped':
-          elements.push(
-            <text
-              key={`s-${mi}-${ei}`}
-              x={cx}
-              y={tabTop + 2 * STRING_SPACING + 4}
-              fontSize={10}
-              fill="#c77"
-              textAnchor="middle"
-            >
-              —
-            </text>,
-          );
-          break;
+  switch (evt.kind) {
+    case 'note':
+      if (evt.stringIndex !== undefined && evt.fret !== undefined) {
+        return (
+          <text
+            key={key}
+            x={cx}
+            y={y + evt.stringIndex * LAYOUT.STRING_SPACING + 5}
+            fontSize={12}
+            fontWeight="bold"
+            fill="currentColor"
+            textAnchor="middle"
+          >
+            {evt.fret}
+          </text>
+        );
       }
+      return null;
 
-      x += w;
-    }
+    case 'drone':
+      return (
+        <text
+          key={key}
+          x={cx}
+          y={y + 4 * LAYOUT.STRING_SPACING + 4}
+          fontSize={10}
+          fill="var(--text-muted, #999)"
+          textAnchor="middle"
+        >
+          d
+        </text>
+      );
+
+    case 'rest':
+      return (
+        <text
+          key={key}
+          x={cx}
+          y={y + 2 * LAYOUT.STRING_SPACING + 4}
+          fontSize={12}
+          fill="var(--text-muted, #999)"
+          textAnchor="middle"
+        >
+          z
+        </text>
+      );
+
+    case 'skipped':
+      return (
+        <text
+          key={key}
+          x={cx}
+          y={y + 2 * LAYOUT.STRING_SPACING + 4}
+          fontSize={10}
+          fill="#c77"
+          textAnchor="middle"
+        >
+          —
+        </text>
+      );
+
+    default:
+      return null;
   }
-
-  return elements;
 }
 
-/* ── Helpers ──────────────────────────────────────────────── */
-
-function computeSvgWidth(measures: TabMeasure[]): number {
-  let total = 0;
-  for (let mi = 0; mi < measures.length; mi++) {
-    if (mi > 0) total += MEASURE_GAP;
-    for (const evt of measures[mi].events) {
-      total += Math.max(evt.duration * COL_WIDTH * 8, 12);
-    }
-  }
-  return Math.max(total + 16, 400);
-}
+/* ── Helpers ───────────────────────────────────────────────── */
 
 /**
  * Extract string labels from a banjo tuning notation like "gDGBD".
- * The notation is read left-to-right: 5th, 4th, 3rd, 2nd, 1st string.
- * Returns [string1, string2, string3, string4, string5] for display
- * top-to-bottom.
+ * Notation is read left-to-right: 5th, 4th, 3rd, 2nd, 1st string.
+ * Returns [string1, string2, string3, string4, string5] for display.
  */
 function tuningLabels(tuningId: string): string[] {
-  // Parse out individual note letters (ignore case for labels)
   const letters: string[] = [];
   let i = 0;
   while (i < tuningId.length && letters.length < 5) {
     const ch = tuningId[i];
     i++;
-    // Handle sharp
     if (i < tuningId.length && tuningId[i] === '#') {
       letters.push(ch + '#');
       i++;

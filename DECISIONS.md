@@ -116,6 +116,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2.1: Visual tab wrapping and copy-to-clipboard before new musical features
+
+**Decision:** Prioritise visual tab usability (line wrapping, copy-to-clipboard, print styling) before expanding musical scope to jigs, drop-thumb, or ornamentation.
+**Reason:** Real pasted Irish tunes are longer than test phrases and produce very wide unwrapped SVG output. A usable multi-system tab display with copy/export basics is a prerequisite for testing with real-world ABC input. Musical features should not outpace the rendering infrastructure.
+
+---
+
+## 2025-06-08 — Layout calculator as pure functions
+
+**Decision:** Implement tab line-wrapping via a pure-function layout calculator (`src/music/tab/tabLayout.ts`) rather than inline in the React component.
+**Reason:** Pure functions are trivially testable without React or DOM. The layout logic (measure placement, system wrapping, event positioning) is deterministic and can be verified with simple assertions. This keeps the React component thin (rendering only) and the core layout logic reusable across renderers.
+
+---
+
 ## 2025-06-08 — Dynamic programming for position selection (replaces greedy)
 
 **Decision:** Replace greedy position selection with Viterbi-style dynamic programming that finds the globally optimal (string, fret) path.

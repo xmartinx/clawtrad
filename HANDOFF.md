@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**v0.2 — Rhythmic Tab Rendering Foundation complete.** TabDocument data model added. SVG visual tab renderer with rhythmic structure, rests, barlines, and drone markers. Plain text tab kept as fallback. 143 tests pass.
+**v0.2.1 — Visual Tab Usability Pass complete.** SVG tab now wraps into multiple systems on long tunes. Copy-to-clipboard for plain text. Print-friendly CSS. Layout calculator added for testable, deterministic wrapping. 156 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08
-- **Previous commit:** `9e925ef` — feat: improve abc parsing and arrangement reliability
+- **Previous commit:** `0c2205d` — feat: add rhythmic tab document and visual renderer
 
 ## Commands
 
@@ -36,8 +36,8 @@ npm run lint
 ## Tests Status
 
 ```
- Test Files  8 passed (8)
-      Tests  143 passed (143)
+ Test Files  9 passed (9)
+      Tests  156 passed (156)
 ```
 
 Test files:
@@ -48,7 +48,36 @@ Test files:
 - `src/music/__tests__/asciiTab.test.ts` — tab output shape and content
 - `src/music/__tests__/abcParser.test.ts` — header parsing, key signatures, accidentals, octaves, warnings
 - `src/music/__tests__/scoring.test.ts` — intrinsic scores, transitions, DP vs greedy, 5th-string avoidance
-- `src/music/__tests__/tabDocument.test.ts` — rhythm events, measure separation, rests, drones, diagnostics (**new in v0.2**)
+- `src/music/__tests__/tabDocument.test.ts` — rhythm events, measure separation, rests, drones, diagnostics (v0.2)
+- `src/music/__tests__/tabLayout.test.ts` — layout wrapping, multi-system, barline placement (**new in v0.2.1**)
+
+## What Changed in v0.2.1
+
+### SVG line wrapping (`src/music/tab/tabLayout.ts`, `src/components/VisualTab.tsx`)
+- New `tabLayout.ts`: pure `computeLayout()` function wraps measures into `TabSystem[]`
+  when content exceeds max width (default 780px)
+- Each `TabSystem` has its own 5 string lines, string labels, barlines, and events
+- Measures kept whole unless a single measure exceeds system width
+- Deterministic, testable layout calculations — no React dependency
+- `VisualTab.tsx` rewritten to render multiple SVG `<g>` groups per system
+
+### Copy to clipboard (`src/components/TabOutput.tsx`)
+- "Copy plain text tab" button added above plain text tab
+- Uses `navigator.clipboard.writeText()` API
+- Shows "Copied!" feedback for 2 seconds
+- Degrades gracefully if Clipboard API unavailable
+
+### Print styling (`src/index.css`)
+- `@media print` rules: hide controls, header, footer, and input sections
+- Force white background, black text
+- Preserve tab output sections with `page-break-inside: avoid`
+
+### Bug fix
+- `src/app/App.tsx` footer version updated from v0.1.1 to v0.2.1
+
+### Tests
+- `tabLayout.test.ts` — 13 tests: multi-system wrapping, measure order, event order,
+  barline placement, duration-based spacing, rest/skip positioning, max width
 
 ## What Changed in v0.2
 
@@ -128,19 +157,20 @@ Test files:
 2. **Drone placement is simplistic** — only beats 1 and 3 in 4/4 get drones
 3. **SVG tab has basic layout** — no note stems, beams, or proper engraving; proportional spacing but no fine rhythmic placement
 4. **Rests shown as "z"** — no proper rest engraving symbols
-5. **No line wrapping in SVG** — long tunes produce very wide SVGs
+5. **No line wrapping within a measure** — if a single measure is wider than the system, it overflows rather than being split
 6. **Key signature subset** — flat keys beyond F and Bb, and some modal keys, generate a warning
 7. **Seventh-fret ceiling** — notes requiring fret > 7 are skipped; no octave folding
 
 ## Next Recommended Task
 
-**v0.2 refinements** — copy-to-clipboard for plain text tab, SVG responsive width/line-wrapping, tuning recommendation, or improved drone placement patterns. See `ROADMAP.md` for full v0.2 scope.
+**v0.3 — Jig Support**: extend rhythm and drone logic for 6/8 time, add jig test fixtures, update TabDocument and visual tab for compound meter. See `ROADMAP.md`.
 
 Alternatively:
-- **Jig support (v0.3)** — extend drone logic for 6/8 rhythm
+- **Tuning recommendation** — suggest best tuning based on tune key and range
 - **Editable tab** — click to change string/fret assignments
 
 ## Last Completed Task
 
-v0.2 Rhythmic Tab Rendering Foundation: TabDocument model, SVG visual tab renderer, rhythm events, rest preservation, drone event fix, 143 tests. Commit pending.
+v0.2.1 Visual Tab Usability Pass: SVG line wrapping, copy-to-clipboard, print CSS, layout calculator, 156 tests. Commit pending.
+
 

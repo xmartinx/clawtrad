@@ -25,7 +25,7 @@
 - [x] Diagnostic summary (note count, skipped count, tuning, mode, unplayable)
 - [x] Comprehensive tests (124 tests, 7 test files)
 
-## v0.2 — Rhythmic Tab Rendering Foundation 🔄 (current)
+## v0.2 — Rhythmic Tab Rendering Foundation ✅
 
 - [x] TabDocument internal data model
 - [x] SVG visual tab renderer (5 lines, fret numbers, rests, barlines, drones, labels)
@@ -33,8 +33,13 @@
 - [x] Rest preservation in tab output
 - [x] Plain text tab kept as fallback
 - [x] Fix clawhammer drone mutation bug
-- [ ] SVG tab line-wrapping for long tunes
-- [ ] Copy-to-clipboard for plain text tab
+
+## v0.2.1 — Visual Tab Usability Pass ✅ (current)
+
+- [x] SVG tab line-wrapping (multi-system layout)
+- [x] Copy-to-clipboard for plain text tab
+- [x] Print-friendly CSS styling
+- [x] Layout calculator (pure functions, testable)
 - [ ] PDF export of tab
 - [ ] Tuning recommendation based on tune key/range
 - [ ] Improved drone placement (off-beat drones, simple patterns)

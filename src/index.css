@@ -222,6 +222,26 @@ p {
   font-style: italic;
 }
 
+.tab-output-header {
+  margin-bottom: 6px;
+}
+
+.copy-btn {
+  padding: 5px 14px;
+  font-size: 13px;
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.copy-btn:hover {
+  background: var(--accent-bg);
+}
+
 /* ── Warning Panel ─────────────────────── */
 
 /* ── Diagnostics bar ───────────────────── */
@@ -283,4 +303,49 @@ p {
 .footer-note {
   font-size: 12px;
   margin-top: 4px;
+}
+
+/* ── Print styles ──────────────────────── */
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  :root {
+    --bg: #fff;
+    --bg-card: #fff;
+    --text: #000;
+    --text-h: #000;
+    --text-muted: #555;
+    --border: #ccc;
+  }
+
+  .app-header,
+  .app-footer,
+  .input-section,
+  .preview-section,
+  .controls,
+  .copy-btn,
+  .generate-btn,
+  .tab-output-header {
+    display: none;
+  }
+
+  .output-section {
+    border: none;
+    padding: 0;
+    page-break-inside: avoid;
+  }
+
+  .visual-tab svg {
+    max-width: 100%;
+  }
+
+  #root {
+    max-width: 100%;
+    padding: 0;
+    border: none;
+  }
 }
