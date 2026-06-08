@@ -144,6 +144,27 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2.4: 5th string is drone-only; melody uses strings 1–4 only
+
+**Decision:** The 5th string is treated as a drone-only open string. `findPositions()` excludes it from melody candidates entirely. Only `findDronePosition()` may return a 5th-string position, and only at fret 0.
+**Reason:** Using the 5th string for fretted melody notes is not idiomatic clawhammer banjo. The 5th string is a high drone, physically short, and not intended for melody. Banning it from melody candidates eliminates unplayable/unnatural tab output.
+
+---
+
+## 2025-06-08 — v0.2.4: Expanded fret limits and octave-lower melody placement
+
+**Decision:** Allow frets 0–10 on strings 1–2, frets 0–7 on strings 3–4. Additionally, generate octave-lower (pitch − 12) candidates for each note so the DP can choose better middle-string placement.
+**Reason:** Restricting to fret 7 globally pushed melody too high on string 1. Allowing frets 8–10 on the top strings, combined with octave-lower options, lets the DP find natural middle-string (2–4) placements that are more playable and readable.
+
+---
+
+## 2025-06-08 — v0.2.4: Visual correctness before feature expansion
+
+**Decision:** Prioritise visual tab corrections (string mapping, drone line, beam groups, clean header) over new musical features in v0.2.4.
+**Reason:** User QA identified that the visual output did not match common clawhammer tab conventions. Correcting the rendering is a prerequisite for further manual testing and feature development.
+
+---
+
 ## 2025-06-08 — v0.2.1: Visual tab wrapping and copy-to-clipboard before new musical features
 
 **Decision:** Prioritise visual tab usability (line wrapping, copy-to-clipboard, print styling) before expanding musical scope to jigs, drop-thumb, or ornamentation.

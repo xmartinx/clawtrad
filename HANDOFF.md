@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**v0.2.3 — Banjo Tab Engraving Style Pass complete.** Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
+**v0.2.4 — Visual Tab Correction Pass complete.** String mapping fixed, 5th-string melody banned, octave-lower placement added, fret limits expanded (0–10 on strings 1–2), cleaned header, beam groups, skipped "x" with stems. 203 tests pass. Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08

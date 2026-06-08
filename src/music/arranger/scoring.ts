@@ -1,17 +1,15 @@
-/** Position scoring for melody-to-tab arrangement.
+/** Position scoring for melody-to-tab arrangement — v0.2.4.
  *
- *  v0.1.1: Adds dynamic-programming global-path optimisation alongside
- *  the original greedy selector. The scoring model is split into
- *  intrinsic position merit and transition cost so both algorithms
- *  share the same weights.
+ *  Priorities:
+ *    1. Prefer middle strings (2–4) for natural banjo placement
+ *    2. Prefer lower frets
+ *    3. Prefer open strings where musically useful
+ *    4. Avoid large jumps from previous position
+ *    5. Strongly avoid using string 1 unless needed
+ *    6. 5th string is banned from melody entirely (enforced by fretboard)
  *
- *  Priorities (see MUSIC_ENGINE_NOTES.md):
- *    1. Prefer lower frets
- *    2. Prefer open strings where musically useful
- *    3. Avoid large jumps from previous position
- *    4. Prefer strings 1–3 for melody
- *    5. Avoid using the 5th string as normal melody
- *    6. Prefer positions that allow simple clawhammer right-hand flow
+ *  v0.2.4: Octave-lower candidates carry `originalPitch` so the
+ *  arranger can emit a diagnostic when the lower octave was preferred.
  */
 
 import type { FretPosition } from '../banjo/fretboard';
@@ -19,47 +17,50 @@ import type { FretPosition } from '../banjo/fretboard';
 /* ── Scoring weights ──────────────────────────────────────── */
 
 const WEIGHTS = {
-  /** Bonus per fret below MAX_FRET (so lower frets score higher). */
+  /** Bonus per fret below 10 (so lower frets score higher). */
   lowFret: 3,
   /** Bonus for open strings (fret 0). */
   openString: 4,
-  /** Bonus for playing on melody strings (1–3). */
-  melodyString: 5,
-  /** Penalty for using 5th string as melody. */
-  fifthStringPenalty: -20,
+  /** Bonus for playing on middle melody strings (2–4). */
+  middleString: 6,
+  /** Penalty for using string 1 (too high/ringy for melody). */
+  string1Penalty: -8,
   /** Penalty per fret of jump from previous position. */
   jumpPenaltyPerFret: -2,
   /** Penalty per string of jump from previous position. */
-  jumpPenaltyPerString: -1,
+  jumpPenaltyPerString: -2,
   /** Bonus for staying on same string. */
-  sameString: 2,
+  sameString: 3,
+  /** Bonus for octave-lower placement (more natural banjo range). */
+  octaveLower: 4,
 } as const;
 
 /* ── Intrinsic position score (higher = better) ──────────── */
 
-/**
- * Compute the *intrinsic* score of a position — how good it is
- * regardless of what came before.  Higher is better.
- */
 export function intrinsicScore(pos: FretPosition): number {
   let score = 0;
 
-  // Prefer lower frets
-  score += (7 - pos.fret) * WEIGHTS.lowFret;
+  // Prefer lower frets (scale to max 10)
+  score += (10 - pos.fret) * WEIGHTS.lowFret;
 
   // Bonus for open strings
   if (pos.fret === 0) {
     score += WEIGHTS.openString;
   }
 
-  // Prefer melody strings (1–3)
-  if (pos.string >= 1 && pos.string <= 3) {
-    score += WEIGHTS.melodyString;
+  // Prefer middle strings (2–4) for natural banjo melody placement
+  if (pos.string >= 2 && pos.string <= 4) {
+    score += WEIGHTS.middleString;
   }
 
-  // Penalty for using 5th string as melody
-  if (pos.string === 5) {
-    score += WEIGHTS.fifthStringPenalty;
+  // Penalty for string 1 — keep melody off the top string unless needed
+  if (pos.string === 1) {
+    score += WEIGHTS.string1Penalty;
+  }
+
+  // Bonus for octave-lower placement
+  if (pos.originalPitch !== undefined && pos.pitch < pos.originalPitch) {
+    score += WEIGHTS.octaveLower;
   }
 
   return score;
@@ -67,10 +68,6 @@ export function intrinsicScore(pos: FretPosition): number {
 
 /* ── Transition score (higher = better, i.e. less penalty) ── */
 
-/**
- * Score for moving from `prev` to `curr`.
- * Higher is better (negative values represent a cost).
- */
 export function transitionScore(prev: FretPosition, curr: FretPosition): number {
   const fretJump = Math.abs(curr.fret - prev.fret);
   const stringJump = Math.abs(curr.string - prev.string);
@@ -86,17 +83,8 @@ export function transitionScore(prev: FretPosition, curr: FretPosition): number 
   return score;
 }
 
-/* ── Combined score (intrinsic + transition) ─────────────── */
+/* ── Combined score ───────────────────────────────────────── */
 
-/**
- * Score a single candidate position for a note, including transition
- * from a previous position.
- *
- * `prev` can be null for the first note in the sequence.
- *
- * This is the original greedy-scoring entry point, kept for
- * backward compatibility and for use as a fallback.
- */
 export function scorePosition(
   pos: FretPosition,
   prev: FretPosition | null,
@@ -108,15 +96,8 @@ export function scorePosition(
   return score;
 }
 
-/* ── Greedy selection (original, kept for reference) ─────── */
+/* ── Greedy selection (kept for reference) ────────────────── */
 
-/**
- * Select the best position from a list of candidates, given the
- * previous position (or null for the first note).
- *
- * This is a greedy local choice — it does NOT consider the global
- * optimum.  For most use-cases prefer {@link findOptimalPath}.
- */
 export function selectBestPosition(
   candidates: FretPosition[],
   prev: FretPosition | null,
@@ -139,34 +120,12 @@ export function selectBestPosition(
 
 /* ── Dynamic-programming global-path optimisation ────────── */
 
-/**
- * Result of the global-path arrangement algorithm.
- */
 export interface DpResult {
-  /** Optimal positions for each note (same length as candidateGroups). */
   path: (FretPosition | null)[];
-  /** Indices of notes that had no playable candidates. */
   unplayableIndices: number[];
-  /** Total cost of the path (lower = better). */
   totalCost: number;
 }
 
-/**
- * Find the globally optimal (minimum-cost) path through a sequence of
- * candidate position groups using a Viterbi-style dynamic programming
- * algorithm.
- *
- * The cost model minimises:
- *   localCost(pos) = -intrinsicScore(pos)    [lower is better]
- *   transitionCost(prev, curr) = -transitionScore(prev, curr)
- *
- * Unplayable notes (empty candidate sets) produce a null in the path
- * slot and are counted in `unplayableIndices`.  They break the
- * transition chain so the DP restarts fresh after each gap.
- *
- * Complexity: O(N × K²) where N = notes, K = max candidates per note.
- * For our domain (K ≤ 5, N typically < 200) this is negligible.
- */
 export function findOptimalPath(
   candidateGroups: FretPosition[][],
 ): DpResult {
@@ -179,7 +138,6 @@ export function findOptimalPath(
 
   let segmentStart = 0;
   while (segmentStart < N) {
-    // Skip unplayable notes at the start of a segment
     while (segmentStart < N && candidateGroups[segmentStart].length === 0) {
       unplayableIndices.push(segmentStart);
       path[segmentStart] = null;
@@ -187,13 +145,11 @@ export function findOptimalPath(
     }
     if (segmentStart >= N) break;
 
-    // Find the end of this playable segment
     let segmentEnd = segmentStart + 1;
     while (segmentEnd < N && candidateGroups[segmentEnd].length > 0) {
       segmentEnd++;
     }
 
-    // Run DP on this contiguous segment
     const segment = candidateGroups.slice(segmentStart, segmentEnd);
     const segResult = dpSegment(segment);
     for (let i = 0; i < segResult.length; i++) {
@@ -201,54 +157,37 @@ export function findOptimalPath(
     }
     totalCost += computeSegmentCost(segResult);
 
-    // Move to the next segment
     segmentStart = segmentEnd;
-    // The gap note(s) are handled at the top of the loop
   }
 
   return { path, unplayableIndices, totalCost };
 }
 
-/**
- * Compute the local cost of a position.
- * Lower is better.  This is simply -intrinsicScore so the DP
- * finds a minimum-cost path.
- */
+/* ── DP internals ──────────────────────────────────────────── */
+
 function localCost(pos: FretPosition): number {
   return -intrinsicScore(pos);
 }
 
-/**
- * Compute the transition cost from prev to curr.
- * Lower is better.
- */
 function transitionCost(prev: FretPosition, curr: FretPosition): number {
   return -transitionScore(prev, curr);
 }
 
-/**
- * Run DP on a contiguous segment where every note has ≥1 candidate.
- * Returns the optimal position for each note in the segment.
- */
 function dpSegment(segment: FretPosition[][]): FretPosition[] {
   const M = segment.length;
   if (M === 0) return [];
 
-  // dp[i][k] = minimum cost to reach note i at candidate k
-  // prev[i][k] = index of best predecessor for note i at candidate k
   const dp: number[][] = [];
   const prev: (number | null)[][] = [];
 
-  // ── initialise first note ──
   dp[0] = [];
   prev[0] = [];
   const cand0 = segment[0];
   for (let k = 0; k < cand0.length; k++) {
     dp[0][k] = localCost(cand0[k]);
-    prev[0][k] = null; // no predecessor
+    prev[0][k] = null;
   }
 
-  // ── fill DP table ──
   for (let i = 1; i < M; i++) {
     const candI = segment[i];
     dp[i] = new Array(candI.length);
@@ -272,7 +211,6 @@ function dpSegment(segment: FretPosition[][]): FretPosition[] {
     }
   }
 
-  // ── backtrack ──
   const path: FretPosition[] = new Array(M);
   let bestLast = 0;
   let bestLastCost = dp[M - 1][0];
@@ -287,7 +225,6 @@ function dpSegment(segment: FretPosition[][]): FretPosition[] {
   for (let i = M - 2; i >= 0; i--) {
     const predIdx = prev[i + 1][bestLast];
     if (predIdx === null) {
-      // Shouldn't happen in a contiguous segment, but guard anyway
       path[i] = segment[i][0];
     } else {
       path[i] = segment[i][predIdx];
@@ -298,7 +235,6 @@ function dpSegment(segment: FretPosition[][]): FretPosition[] {
   return path;
 }
 
-/** Compute the total cost of a path. */
 function computeSegmentCost(path: FretPosition[]): number {
   let cost = 0;
   for (let i = 0; i < path.length; i++) {
