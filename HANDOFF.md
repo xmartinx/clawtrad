@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**v0.1 — MVP complete.** Working prototype with ABC parsing, three tunings, melody-to-tab arrangement, and plain-text tab output. All 54 unit tests pass.
+**v0.1.1 — Arrangement Engine Reliability Pass complete.** ABC parser significantly improved with proper accidental/key-signature/octave handling. Dynamic-programming global-path arrangement replaces greedy selection. Warning and diagnostic coverage expanded. 124 unit tests pass.
 
 - **Branch:** `master`
-- **Latest commit:** `94476ae` — fix: remove unused parseTuning import in tunings test
 - **Date:** 2025-06-08
+- **Previous commit:** `d70a5f8` — docs: update HANDOFF.md with commit hash and date
 
 ## Commands
 
@@ -36,67 +36,80 @@ npm run lint
 ## Tests Status
 
 ```
- Test Files  5 passed (5)
-      Tests  54 passed (54)
+ Test Files  7 passed (7)
+      Tests  124 passed (124)
 ```
 
 Test files:
 - `src/music/__tests__/notes.test.ts` — MIDI conversion, pitchClass, note naming
 - `src/music/__tests__/tunings.test.ts` — tuning definitions, open pitch tables
 - `src/music/__tests__/fretboard.test.ts` — position finding, fret range
-- `src/music/__tests__/arrangeMelody.test.ts` — melody arrangement, clawhammer mode
+- `src/music/__tests__/arrangeMelody.test.ts` — melody arrangement, clawhammer, DP, warnings
 - `src/music/__tests__/asciiTab.test.ts` — tab output shape and content
+- `src/music/__tests__/abcParser.test.ts` — header parsing, key signatures, accidentals, octaves, warnings (**new in v0.1.1**)
+- `src/music/__tests__/scoring.test.ts` — intrinsic scores, transitions, DP vs greedy, 5th-string avoidance (**new in v0.1.1**)
 
-## Files Changed (from initial scaffold)
+## What Changed in v0.1.1
 
-### New files (from scratch)
-Everything in `src/` was created new for ClawTrad:
-- `src/music/abc/types.ts`, `parseAbc.ts`
-- `src/music/theory/notes.ts`, `keys.ts`
-- `src/music/banjo/tunings.ts`, `fretboard.ts`, `tabTypes.ts`
-- `src/music/arranger/arrangeMelody.ts`, `scoring.ts`, `clawhammer.ts`
-- `src/music/render/asciiTab.ts`
-- `src/music/__tests__/notes.test.ts`, `tunings.test.ts`, `fretboard.test.ts`, `arrangeMelody.test.ts`, `asciiTab.test.ts`
-- `src/components/AbcInput.tsx`, `TuningSelector.tsx`, `ModeSelector.tsx`, `NotationPreview.tsx`, `TabOutput.tsx`, `WarningPanel.tsx`
-- `src/app/App.tsx`
-- `src/test-fixtures/simple-d-reel.abc`, `simple-g-reel.abc`
+### ABC parser (`src/music/abc/parseAbc.ts`)
+- Full inline accidental support: `^` (sharp), `^^` (double sharp), `_` (flat), `__` (double flat), `=` (natural)
+- Accidental prefix form (accidental before note) works correctly
+- Explicit accidentals override key-signature accidentals
+- Natural sign cancels key-signature accidental for that note
+- Improved unsupported-feature detection with specific warnings:
+  - Grace notes `{…}`
+  - Chords in quotes `"…"` and brackets `[…]`
+  - Decorations `!…!`
+  - Tuplets `(3…`
+  - Broken rhythm `< >`
+  - Multiple voices `V:`
+- `skippedTokens` counter in ParsedAbcTune for diagnostics
+- Better tokenizer with cleaner regex construction
 
-### Modified files
-- `package.json` — added test scripts, dependencies
-- `vite.config.ts` — added Vitest configuration
-- `index.html` — updated title
-- `src/main.tsx` — updated App import path
-- `src/index.css` — full restyle for ClawTrad UI
-- `.gitignore` — added coverage, cache, env entries
+### Key signatures (`src/music/abc/types.ts`)
+- Expanded KEY_SIGNATURES with correct music-theory mappings
+- Added: `Dmix` (D mixolydian), `Ddor` (D dorian), `Bm` (B minor)
+- Fixed `Ador` to 1 sharp (was incorrectly 3)
+- Unknown key signatures generate a clear warning listing supported keys
 
-### Removed files
-- `src/App.tsx` (scaffold default, replaced by `src/app/App.tsx`)
-- `src/App.css` (scaffold default, replaced by updated `src/index.css`)
+### Dynamic Programming arrangement (`src/music/arranger/scoring.ts`, `arrangeMelody.ts`)
+- Replaced greedy position selection with Viterbi-style DP global-path optimisation
+- `findOptimalPath()` finds minimum-cost (string, fret) path across entire melody
+- Split scoring into `intrinsicScore()` (position merit) and `transitionScore()` (movement cost)
+- Original `scorePosition()` and `selectBestPosition()` preserved for backward compat
+- DP naturally segments around unplayable notes (restarts after gaps)
+- Complexity: O(N × K²) where K ≤ 5 candidates per note — negligible in practice
 
-### Documentation files (all new)
-- `README.md`, `PROJECT_BRIEF.md`, `TECHNICAL_ARCHITECTURE.md`
-- `MUSIC_ENGINE_NOTES.md`, `DATA_AND_RIGHTS.md`, `ROADMAP.md`
-- `DECISIONS.md`, `HANDOFF.md`, `CLAUDE.md`
+### Diagnostics and warnings (`src/app/App.tsx`, `src/index.css`)
+- Diagnostic summary bar showing: key, tuning, mode, note count, unplayable count
+- Improved warning aggregation — parser and arranger warnings combined
+- Updated footer version to v0.1.1
+
+### Tests (124 total, up from 54)
+- `abcParser.test.ts` — 32 new tests covering headers, key sigs, accidentals, octaves, warnings, note/rest counts
+- `scoring.test.ts` — 15 new tests covering intrinsic scores, transitions, DP vs greedy, 5th-string avoidance, note ordering
+- `arrangeMelody.test.ts` — added DP-specific tests (global optimisation, 5th-string avoidance, warning aggregation)
 
 ## Known Issues
 
-1. **ABC parser is deliberately limited** — see `MUSIC_ENGINE_NOTES.md` for full list. Chords, grace notes, tuplets, decorations, and multi-voice ABC will not parse correctly.
-2. **Position selection is greedy** — may produce suboptimal fingerings over longer phrases. A look-ahead or Viterbi-style algorithm would improve results.
-3. **Drone placement is simplistic** — only beats 1 and 3 in 4/4 get drones. No off-beat or syncopated drone patterns.
-4. **No note duration in tab rendering** — all tab columns are rendered with equal spacing regardless of note length.
-5. **`abcjs` import may need type declarations** — if TypeScript complains about the abcjs import, a `@types/abcjs` package may be needed.
-6. **Rests (`z`) are parsed but dropped** — they cause the duration accumulator to advance but produce no tab output, which may cause alignment issues in some tunes.
-7. **Key signature handling is basic** — only handles natural+sharp keys up to 4 sharps. Flat keys and modal key signatures need more work.
+1. **ABC parser is limited to monophonic melody** — chords, multi-voice, grace notes, tuplets detected and warned but not parsed
+2. **Drone placement is simplistic** — only beats 1 and 3 in 4/4 get drones
+3. **No note duration in tab rendering** — all tab columns equal width regardless of duration
+4. **Rests skipped** — they advance duration but produce no tab column, may cause rhythmic misalignment
+5. **Key signature subset** — flat keys beyond F and Bb, and some modal keys, generate a warning
+6. **DP is deterministic but not perfect** — transition costs are based on heuristics, not ergonomic hand modelling
+7. **Seventh-fret ceiling** — notes requiring fret > 7 are skipped; no octave folding
 
 ## Next Recommended Task
 
-**Better tab rendering** — SVG or HTML canvas rendering of tab with proper note stems, beams, and drone markers. This is the most visible improvement for v0.2.
+**Better tab rendering (v0.2)** — SVG or HTML canvas rendering with proper note stems, beams, and drone markers. The arrangement engine is now reliable enough to invest in presentation.
 
 Alternatively:
-- **Improve position selection** — implement a 2-note look-ahead or full dynamic programming approach
-- **Add jig support** — extend parser and drone logic for 6/8 time
-- **Add more ABC features** — handle grace notes (as skipped+warned), basic chords (arpeggiated)
+- **Jig support (v0.3)** — extend drone logic for 6/8 rhythm
+- **Tuning recommendation** — suggest best tuning based on tune key and range
+- **Editable tab** — click to change string/fret assignments
 
 ## Last Completed Task
 
-Full v0.1 MVP: project scaffold, music engine, UI components, tests, and documentation. Commit pending.
+v0.1.1 Arrangement Engine Reliability Pass: parser overhaul, DP arrangement, expanded key signatures, diagnostics, 124 tests. Commit pending.
+

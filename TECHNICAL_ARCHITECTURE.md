@@ -64,12 +64,19 @@ ABC text input
 
 ## Arrangement Engine Overview
 
-1. **Parse**: ABC text → `ParsedAbcTune` with normalized MIDI pitches and durations
+1. **Parse**: ABC text → `ParsedAbcTune` with normalized MIDI pitches, durations, and diagnostics
 2. **Position finding**: For each note, find all (string, fret) positions within 0–7 frets
-3. **Scoring**: Score each candidate against musical priorities (lower frets, open strings, minimal jumps)
-4. **Selection**: Greedy best-position selection (each note depends on previous)
+3. **Scoring**: Score candidates with `intrinsicScore()` (position merit) and `transitionScore()` (movement cost)
+4. **Selection**: **Dynamic-programming (Viterbi-style) global-path optimisation** (`findOptimalPath()`) — finds the minimum-cost (string, fret) sequence across the entire melody
 5. **Drone**: (Clawhammer mode only) Add 5th-string drone markers on strong beats
 6. **Render**: Format as plain-text tab mimicking standard banjo tab layout
+
+### DP Algorithm
+
+- Separates intrinsic position scoring from transition costs
+- O(N × K²) where N = notes, K ≤ 5 candidates per note — negligible for real tunes
+- Naturally segments around unplayable notes (restarts after each gap)
+- Deterministic: same input always produces the same output
 
 ## Why No Backend Yet
 

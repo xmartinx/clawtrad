@@ -224,6 +224,32 @@ p {
 
 /* ── Warning Panel ─────────────────────── */
 
+/* ── Diagnostics bar ───────────────────── */
+
+.diagnostics {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.diagnostics span {
+  white-space: nowrap;
+}
+
+.diag-warn {
+  color: #c77;
+  font-weight: 600;
+}
+
+/* ── Warning Panel ─────────────────────── */
+
 .warning-panel {
   margin-top: 16px;
   padding: 12px 16px;

@@ -1,6 +1,6 @@
 # Roadmap — ClawTrad
 
-## v0.1 — Paste ABC to Basic Tab ✅ (current)
+## v0.1 — Paste ABC to Basic Tab ✅
 
 - [x] Vite React TypeScript scaffold
 - [x] Three tunings: Open G, Double D, Sawmill A
@@ -11,8 +11,19 @@
 - [x] Plain-text tab output
 - [x] Standard notation preview via abcjs
 - [x] Warning panel for unsupported ABC features
-- [x] Unit tests for core engine
+- [x] Unit tests for core engine (54 tests)
 - [x] Full project documentation
+
+## v0.1.1 — Arrangement Engine Reliability Pass ✅ (current)
+
+- [x] Proper accidental support (^ = _ and their double forms)
+- [x] Key signature expansion (Ador, Edor, Amix, Dmix, Ddor, Am, Em, Bm, Dm)
+- [x] Better octave handling (case + markers, tested)
+- [x] Dynamic-programming global-path arrangement (replaces greedy)
+- [x] Separated intrinsic/transition scoring model
+- [x] Improved warnings for unsupported ABC features
+- [x] Diagnostic summary (note count, skipped count, tuning, mode, unplayable)
+- [x] Comprehensive tests (124 tests, 7 test files)
 
 ## v0.2 — Better Rendering, Export, Tuning Recommendation
 
@@ -21,7 +32,6 @@
 - Copy-to-clipboard for plain text tab
 - Tuning recommendation based on tune key/range
 - Improved drone placement (off-beat drones, simple patterns)
-- Better position selection (look-ahead, not just greedy)
 - Support for 6/8 (jig rhythm awareness, even if drone logic is basic)
 - Handle more ABC features (grace notes as warnings, not breakage)
 
