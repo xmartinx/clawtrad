@@ -31,6 +31,9 @@ coverage/
 public/tunes/
 *.abc.cache
 
+# Private manual test inputs (do not commit third-party ABC)
+manual-test-inputs/
+
 # Environment
 .env
 .env.*

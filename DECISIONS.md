@@ -116,6 +116,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2.2: Real-world ABC paste tolerance before jig/drop-thumb support
+
+**Decision:** Prioritise ABC parser tolerance (comments, missing headers, unsupported features) before expanding musical scope to jigs or drop-thumb.
+**Reason:** Users will paste ABC from varied sources. A forgiving parser with clear, deduplicated warnings is required before investing in new musical features. Crashing or producing confusing output on real-world ABC undermines trust in the tool.
+
+---
+
+## 2025-06-08 — Warning deduplication and specific messaging
+
+**Decision:** Deduplicate parser warnings and use specific, user-actionable messages rather than generic technical descriptions.
+**Reason:** Multiple instances of the same unsupported feature (e.g., 5 chord symbols) should produce one clear warning, not 5 duplicates. Messages should tell the user what was ignored and why, not just state a technical fact ("Chord symbols were ignored: tab is generated from melody only." not "Chord annotations are not supported – skipped").
+
+---
+
 ## 2025-06-08 — v0.2.1: Visual tab wrapping and copy-to-clipboard before new musical features
 
 **Decision:** Prioritise visual tab usability (line wrapping, copy-to-clipboard, print styling) before expanding musical scope to jigs, drop-thumb, or ornamentation.

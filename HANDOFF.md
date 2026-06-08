@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**v0.2.1 — Visual Tab Usability Pass complete.** SVG tab now wraps into multiple systems on long tunes. Copy-to-clipboard for plain text. Print-friendly CSS. Layout calculator added for testable, deterministic wrapping. 156 tests pass.
+**v0.2.2 — Real-World ABC Compatibility Pass complete.** Parser now tolerates comments, line continuations, slurs/ties, endings, +decorations+, missing headers, unknown headers, multiple T: lines. Warnings deduplicated and improved. 184 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08
-- **Previous commit:** `0c2205d` — feat: add rhythmic tab document and visual renderer
+- **Previous commit:** `f05858c` — feat: improve visual tab wrapping and copy support
 
 ## Commands
 
@@ -36,8 +36,8 @@ npm run lint
 ## Tests Status
 
 ```
- Test Files  9 passed (9)
-      Tests  156 passed (156)
+ Test Files  10 passed (10)
+      Tests  184 passed (184)
 ```
 
 Test files:
@@ -49,7 +49,8 @@ Test files:
 - `src/music/__tests__/abcParser.test.ts` — header parsing, key signatures, accidentals, octaves, warnings
 - `src/music/__tests__/scoring.test.ts` — intrinsic scores, transitions, DP vs greedy, 5th-string avoidance
 - `src/music/__tests__/tabDocument.test.ts` — rhythm events, measure separation, rests, drones, diagnostics (v0.2)
-- `src/music/__tests__/tabLayout.test.ts` — layout wrapping, multi-system, barline placement (**new in v0.2.1**)
+- `src/music/__tests__/tabLayout.test.ts` — layout wrapping, multi-system, barline placement (v0.2.1)
+- `src/music/__tests__/abcCompat.test.ts` — parser tolerance, comments, warnings, messy ABC (**new in v0.2.2**)
 
 ## What Changed in v0.2.1
 
@@ -171,6 +172,6 @@ Alternatively:
 
 ## Last Completed Task
 
-v0.2.1 Visual Tab Usability Pass: SVG line wrapping, copy-to-clipboard, print CSS, layout calculator, 156 tests. Commit pending.
+v0.2.2 Real-World ABC Compatibility Pass: tolerant parser, comment handling, missing header fallbacks, improved warnings, 184 tests, manual QA doc. Commit pending.
 
 

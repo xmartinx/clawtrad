@@ -230,7 +230,7 @@ describe('unsupported feature warnings', () => {
   it('warns on chord annotations', () => {
     const result = parseAbc(`X:1\nT:T\nM:4/4\nL:1/8\nK:D\n"D"D2 E2 |`);
     const hasWarn = result.warnings.some((w) =>
-      w.includes('Chord annotations') || w.includes('chord'),
+      w.includes('Chord symbols') || w.includes('Chord annotations') || w.includes('chord'),
     );
     expect(hasWarn).toBe(true);
   });

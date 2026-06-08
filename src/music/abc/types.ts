@@ -1,19 +1,41 @@
-/** ABC parsing types for ClawTrad v0.1.1.
+/** ABC parsing types for ClawTrad v0.2.2.
  *
  *  Represents a deliberately limited subset of ABC notation sufficient
  *  for simple monophonic Irish dance tunes. Full ABC support is not a
  *  goal for this version.
  */
 
+/** Parse diagnostics for ABC input. */
+export interface ParseDiagnostics {
+  /** Number of header lines found. */
+  headerCount: number;
+  /** Number of body lines (after stripping comments/blanks). */
+  bodyLineCount: number;
+  /** Number of barline tokens encountered. */
+  barlineCount: number;
+  /** Categories of unsupported features detected. */
+  unsupportedFeatures: string[];
+  /** Whether key signature was missing (and defaulted). */
+  keyWasMissing: boolean;
+  /** Whether meter was missing (and defaulted). */
+  meterWasMissing: boolean;
+  /** Whether default note length was missing (and defaulted). */
+  lengthWasMissing: boolean;
+}
+
 /** A parsed ABC tune with essential header fields, note events, and diagnostics. */
 export interface ParsedAbcTune {
   title: string;
+  /** Alternate titles (from additional T: lines, if any). */
+  alternateTitles: string[];
   /** Key signature as written in ABC, e.g. "D", "G", "Edor" */
   keySignature: string;
   /** Meter, e.g. "4/4", "6/8" */
   meter: string;
   /** Default note length, e.g. "1/8" */
   defaultNoteLength: string;
+  /** Other recognised header fields stored by key. */
+  otherHeaders: Record<string, string>;
   /** Parsed note events in sequence */
   notes: AbcNote[];
   /** Warnings generated during parsing */
@@ -22,6 +44,8 @@ export interface ParsedAbcTune {
   skippedTokens: number;
   /** Rhythm events in order: notes, rests, and barlines as encountered. */
   rhythmEvents: RhythmEvent[];
+  /** Parse diagnostics. */
+  parseDiagnostics: ParseDiagnostics;
 }
 
 /** A single note event from ABC notation. */

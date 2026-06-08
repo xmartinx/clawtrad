@@ -34,12 +34,24 @@
 - [x] Plain text tab kept as fallback
 - [x] Fix clawhammer drone mutation bug
 
-## v0.2.1 — Visual Tab Usability Pass ✅ (current)
+## v0.2.1 — Visual Tab Usability Pass ✅
 
 - [x] SVG tab line-wrapping (multi-system layout)
 - [x] Copy-to-clipboard for plain text tab
 - [x] Print-friendly CSS styling
 - [x] Layout calculator (pure functions, testable)
+
+## v0.2.2 — Real-World ABC Compatibility Pass ✅ (current)
+
+- [x] Tolerate comments (%), line continuations, blank lines
+- [x] Handle missing K:/M:/L: with fallbacks and warnings
+- [x] Support all common ABC headers (R, C, S, Z, N, etc.)
+- [x] Multiple T: lines preserved
+- [x] Ignore slurs/ties, first/second endings, +decorations+
+- [x] Deduplicated, specific warning messages
+- [x] ParseDiagnostics with feature detection
+- [x] Manual QA documentation (`docs/manual_abc_qa.md`)
+- [x] `manual-test-inputs/` gitignored for private testing
 - [ ] PDF export of tab
 - [ ] Tuning recommendation based on tune key/range
 - [ ] Improved drone placement (off-beat drones, simple patterns)

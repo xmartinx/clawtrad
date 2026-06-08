@@ -50,10 +50,14 @@ Until these are resolved, ClawTrad will not import, cache, or link to tunes from
 - No data is sent to any server.
 - The abcjs library loads from npm at build time and runs in the browser at runtime.
 
+### Manual Testing
+
+A manual QA workflow is documented at `docs/manual_abc_qa.md`. The `manual-test-inputs/` folder is gitignored so private test ABC files can be stored locally without risk of committing third-party content.
+
 ### Compliance Summary
 
-| Concern | v0.1 Stance |
-|---------|------------|
+| Concern | v0.2.2 Stance |
+|---------|---------------|
 | Server-side storage | None |
 | User tracking | None |
 | Scraping | Not done |
@@ -61,3 +65,4 @@ Until these are resolved, ClawTrad will not import, cache, or link to tunes from
 | The Session import | Deferred |
 | Copyright over arrangements | Not claimed |
 | User responsibility | Users control what they paste |
+| Manual ABC test files | Gitignored; not committed |

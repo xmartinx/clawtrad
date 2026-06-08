@@ -6,7 +6,7 @@ Paste an Irish tune. Choose a tuning. Get a clawhammer tab starting point.
 
 ## Current Status
 
-**v0.2.1 — Visual Tab Usability Pass.** SVG tab with multi-system line wrapping. Copy-to-clipboard. Print-friendly. Dynamic-programming arrangement engine. 156 tests.
+**v0.2.2 — Real-World ABC Compatibility.** Tolerant parser handles comments, missing headers, slurs/ties, and unsupported features gracefully. Clear, deduplicated warnings. SVG visual tab with line wrapping. 184 tests.
 
 ## Quick Start
 
