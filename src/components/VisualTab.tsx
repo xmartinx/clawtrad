@@ -144,7 +144,7 @@ function renderSystem(
   );
 }
 
-/* ── System event rendering with beaming ──────────────────── */
+/* ── System event rendering with beat-pair beaming ─────────── */
 
 function renderSystemEvents(
   sys: SystemLayout['systems'][0],
@@ -153,27 +153,32 @@ function renderSystemEvents(
   tabBottom: number,
 ): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
-  // Use simple beat-pair beaming: group consecutive short notes
-  // within the same measure.
-  let i = 0;
   const events = sys.events;
-  while (i < events.length) {
-    const evt = events[i];
 
-    // Check for a beamable pair: two consecutive short notes
+  // Group events by beat (0, 1, 2, 3) using beatPosition
+  const beatGroups: PositionedEvent[][] = [[], [], [], []];
+  for (const evt of events) {
+    const beat = Math.min(Math.floor((evt.beatPosition ?? 0) / 0.25), 3);
+    beatGroups[beat].push(evt);
+  }
+
+  for (let beat = 0; beat < 4; beat++) {
+    const group = beatGroups[beat];
+
+    // Beam if this beat has exactly 2 short sounded non-drone events
     if (
-      i + 1 < events.length &&
-      isShortNote(evt) && isShortNote(events[i + 1]) &&
-      !isBarlineBetween(events, i, sys.barlines, sys)
+      group.length === 2 &&
+      isShortNote(group[0]) && isShortNote(group[1]) &&
+      group[0].kind !== 'drone' && group[1].kind !== 'drone'
     ) {
-      const a = events[i];
-      const b = events[i + 1];
-      elements.push(...renderBeamedPair(a, b, systemIndex, i, y, tabBottom));
-      i += 2;
+      elements.push(...renderBeamedPair(
+        group[0], group[1], systemIndex, elements.length, y, tabBottom,
+      ));
     } else {
-      const cx = LEFT_MARGIN + evt.x;
-      elements.push(renderSingleEvent(evt, i, systemIndex, cx, y, tabBottom));
-      i++;
+      for (const evt of group) {
+        const cx = LEFT_MARGIN + evt.x;
+        elements.push(renderSingleEvent(evt, elements.length, systemIndex, cx, y, tabBottom));
+      }
     }
   }
 
@@ -187,18 +192,6 @@ function isShortNote(evt: PositionedEvent): boolean {
     evt.duration > 0 &&
     evt.duration <= 0.25
   );
-}
-
-function isBarlineBetween(
-  events: PositionedEvent[],
-  idx: number,
-  barlines: number[],
-  _sys: SystemLayout['systems'][0],
-): boolean {
-  // Check if there's a barline between events[idx] and events[idx+1]
-  if (idx + 1 >= events.length) return false;
-  const midX = (events[idx].x + events[idx + 1].x) / 2;
-  return barlines.some((bx) => Math.abs(bx - midX) < 5);
 }
 
 /* ── Beamed pair ───────────────────────────────────────────── */

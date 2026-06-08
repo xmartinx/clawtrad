@@ -29,6 +29,8 @@ const WEIGHTS = {
   jumpPenaltyPerString: -2,
   /** Bonus for staying on same string. */
   sameString: 3,
+  /** Extra bonus for same-string moves ≤ 3 frets (H/P/Sl candidates). */
+  sameStringClose: 5,
 } as const;
 
 /* ── Intrinsic position score (higher = better) ──────────── */
@@ -75,6 +77,10 @@ export function transitionScore(prev: FretPosition, curr: FretPosition): number 
 
   if (curr.string === prev.string) {
     score += WEIGHTS.sameString;
+    // Extra bonus for close same-string moves (H/P/Sl candidates)
+    if (fretJump >= 1 && fretJump <= 3) {
+      score += WEIGHTS.sameStringClose;
+    }
   }
 
   return score;

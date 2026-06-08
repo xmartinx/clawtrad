@@ -158,6 +158,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2.7: Drone fill only in empty offbeat slots
+
+**Decision:** Automatic 5th-string drones fill only empty offbeat slots. They are not inserted when a melody note occupies the offbeat.
+**Reason:** For quarter-note melody (D2 E2 F2 G2), drones in slots 1,3,5,7 are idiomatic clawhammer. For full eighth-note melodies, inserting drones would displace melody notes — use drop-thumb or same-string H/P/Sl instead.
+
+---
+
+## 2025-06-08 — v0.2.7: Conservative drop-thumb and same-string technique preference
+
+**Decision:** Thumb never plays string 1, never plays fretted 5th, and may drop to adjacent inner string (N+1) only. Second melody notes in a beat pair prefer same-string H/P/Sl over impossible thumb assignments.
+**Reason:** User QA showed implausible thumb assignments (thumb on open 1st string for c→d). Same-string technique candidates (0→2 hammer-on, 1→3 slide) are more idiomatic and playable.
+
+---
+
 ## 2025-06-08 — v0.2.4: Visual correctness before feature expansion
 
 **Decision:** Prioritise visual tab corrections (string mapping, drone line, beam groups, clean header) over new musical features in v0.2.4.
