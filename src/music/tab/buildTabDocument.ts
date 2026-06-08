@@ -71,31 +71,21 @@ export function buildTabDocument(
       const col = noteToColumn.get(noteIndex);
       noteIndex++;
 
-      if (!col) {
-        // Shouldn't happen, but guard
+      if (!col || col.isRest) {
+        // Note was unplayable — emit a rest, not an "x" marker.
+        // v0.2.5 policy: no x for missed notes in normal tab output.
         currentMeasure.push({
-          kind: 'skipped',
+          kind: 'rest',
           duration: evt.duration,
           beatPosition,
-          label: 'x',
-          sourcePitch: evt.pitch,
+          label: 'z',
         });
+        restCount++;
         unplayableCount++;
-        beatPosition += evt.duration;
-        continue;
-      }
-
-      if (col.isRest) {
-        // Note was unplayable — emit a skipped event
-        currentMeasure.push({
-          kind: 'skipped',
-          duration: evt.duration,
-          beatPosition,
-          label: 'x',
-          sourcePitch: evt.pitch,
-          warning: `Note ${evt.raw} unplayable in this tuning`,
-        });
-        unplayableCount++;
+        if (col?.isRest) {
+          currentMeasure[currentMeasure.length - 1].warning =
+            `Note ${evt.raw} unplayable in this tuning`;
+        }
         beatPosition += evt.duration;
         continue;
       }

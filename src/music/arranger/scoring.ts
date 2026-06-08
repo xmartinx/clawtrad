@@ -1,15 +1,11 @@
-/** Position scoring for melody-to-tab arrangement — v0.2.4.
+/** Position scoring for melody-to-tab arrangement — v0.2.5.
  *
- *  Priorities:
- *    1. Prefer middle strings (2–4) for natural banjo placement
+ *  Priorities (ordered):
+ *    1. Prefer open strings where musically sensible
  *    2. Prefer lower frets
- *    3. Prefer open strings where musically useful
- *    4. Avoid large jumps from previous position
- *    5. Strongly avoid using string 1 unless needed
- *    6. 5th string is banned from melody entirely (enforced by fretboard)
- *
- *  v0.2.4: Octave-lower candidates carry `originalPitch` so the
- *  arranger can emit a diagnostic when the lower octave was preferred.
+ *    3. Penalise large fret jumps (>3 frets) and quick back-and-forth
+ *    4. Weak middle-string preference (do not force melody off open strings)
+ *    5. 5th string is banned from melody entirely (enforced by fretboard)
  */
 
 import type { FretPosition } from '../banjo/fretboard';
@@ -17,22 +13,22 @@ import type { FretPosition } from '../banjo/fretboard';
 /* ── Scoring weights ──────────────────────────────────────── */
 
 const WEIGHTS = {
-  /** Bonus per fret below 10 (so lower frets score higher). */
+  /** Bonus per fret below 10. */
   lowFret: 3,
   /** Bonus for open strings (fret 0). */
-  openString: 4,
-  /** Bonus for playing on middle melody strings (2–4). */
-  middleString: 6,
-  /** Penalty for using string 1 (too high/ringy for melody). */
-  string1Penalty: -8,
-  /** Penalty per fret of jump from previous position. */
-  jumpPenaltyPerFret: -2,
-  /** Penalty per string of jump from previous position. */
+  openString: 6,
+  /** Weak bonus for middle strings (2–4). */
+  middleString: 2,
+  /** Mild penalty for string 1. */
+  string1Penalty: -3,
+  /** Penalty per fret of jump. */
+  jumpPenaltyPerFret: -3,
+  /** Extra penalty for jumps > 3 frets. */
+  largeJumpPenalty: -6,
+  /** Penalty per string of jump. */
   jumpPenaltyPerString: -2,
   /** Bonus for staying on same string. */
   sameString: 3,
-  /** Bonus for octave-lower placement (more natural banjo range). */
-  octaveLower: 4,
 } as const;
 
 /* ── Intrinsic position score (higher = better) ──────────── */
@@ -40,33 +36,28 @@ const WEIGHTS = {
 export function intrinsicScore(pos: FretPosition): number {
   let score = 0;
 
-  // Prefer lower frets (scale to max 10)
+  // Prefer lower frets
   score += (10 - pos.fret) * WEIGHTS.lowFret;
 
-  // Bonus for open strings
+  // Strong bonus for open strings
   if (pos.fret === 0) {
     score += WEIGHTS.openString;
   }
 
-  // Prefer middle strings (2–4) for natural banjo melody placement
+  // Weak bonus for middle strings (2–4)
   if (pos.string >= 2 && pos.string <= 4) {
     score += WEIGHTS.middleString;
   }
 
-  // Penalty for string 1 — keep melody off the top string unless needed
+  // Mild penalty for string 1
   if (pos.string === 1) {
     score += WEIGHTS.string1Penalty;
-  }
-
-  // Bonus for octave-lower placement
-  if (pos.originalPitch !== undefined && pos.pitch < pos.originalPitch) {
-    score += WEIGHTS.octaveLower;
   }
 
   return score;
 }
 
-/* ── Transition score (higher = better, i.e. less penalty) ── */
+/* ── Transition score (higher = better) ───────────────────── */
 
 export function transitionScore(prev: FretPosition, curr: FretPosition): number {
   const fretJump = Math.abs(curr.fret - prev.fret);
@@ -74,6 +65,12 @@ export function transitionScore(prev: FretPosition, curr: FretPosition): number 
   let score = 0;
 
   score += fretJump * WEIGHTS.jumpPenaltyPerFret;
+
+  // Extra penalty for large fret jumps
+  if (fretJump > 3) {
+    score += WEIGHTS.largeJumpPenalty;
+  }
+
   score += stringJump * WEIGHTS.jumpPenaltyPerString;
 
   if (curr.string === prev.string) {
@@ -96,29 +93,23 @@ export function scorePosition(
   return score;
 }
 
-/* ── Greedy selection (kept for reference) ────────────────── */
+/* ── Greedy selection ─────────────────────────────────────── */
 
 export function selectBestPosition(
   candidates: FretPosition[],
   prev: FretPosition | null,
 ): FretPosition | null {
   if (candidates.length === 0) return null;
-
   let best = candidates[0];
   let bestScore = scorePosition(best, prev);
-
   for (let i = 1; i < candidates.length; i++) {
     const s = scorePosition(candidates[i], prev);
-    if (s > bestScore) {
-      bestScore = s;
-      best = candidates[i];
-    }
+    if (s > bestScore) { bestScore = s; best = candidates[i]; }
   }
-
   return best;
 }
 
-/* ── Dynamic-programming global-path optimisation ────────── */
+/* ── Dynamic-programming ──────────────────────────────────── */
 
 export interface DpResult {
   path: (FretPosition | null)[];
@@ -136,42 +127,31 @@ export function findOptimalPath(
   const unplayableIndices: number[] = [];
   let totalCost = 0;
 
-  let segmentStart = 0;
-  while (segmentStart < N) {
-    while (segmentStart < N && candidateGroups[segmentStart].length === 0) {
-      unplayableIndices.push(segmentStart);
-      path[segmentStart] = null;
-      segmentStart++;
+  let segStart = 0;
+  while (segStart < N) {
+    while (segStart < N && candidateGroups[segStart].length === 0) {
+      unplayableIndices.push(segStart);
+      path[segStart] = null;
+      segStart++;
     }
-    if (segmentStart >= N) break;
+    if (segStart >= N) break;
 
-    let segmentEnd = segmentStart + 1;
-    while (segmentEnd < N && candidateGroups[segmentEnd].length > 0) {
-      segmentEnd++;
-    }
+    let segEnd = segStart + 1;
+    while (segEnd < N && candidateGroups[segEnd].length > 0) segEnd++;
 
-    const segment = candidateGroups.slice(segmentStart, segmentEnd);
-    const segResult = dpSegment(segment);
-    for (let i = 0; i < segResult.length; i++) {
-      path[segmentStart + i] = segResult[i];
-    }
-    totalCost += computeSegmentCost(segResult);
+    const seg = candidateGroups.slice(segStart, segEnd);
+    const segPath = dpSegment(seg);
+    for (let i = 0; i < segPath.length; i++) path[segStart + i] = segPath[i];
+    totalCost += pathCost(segPath);
 
-    segmentStart = segmentEnd;
+    segStart = segEnd;
   }
 
   return { path, unplayableIndices, totalCost };
 }
 
-/* ── DP internals ──────────────────────────────────────────── */
-
-function localCost(pos: FretPosition): number {
-  return -intrinsicScore(pos);
-}
-
-function transitionCost(prev: FretPosition, curr: FretPosition): number {
-  return -transitionScore(prev, curr);
-}
+function localCost(pos: FretPosition): number { return -intrinsicScore(pos); }
+function transCost(a: FretPosition, b: FretPosition): number { return -transitionScore(a, b); }
 
 function dpSegment(segment: FretPosition[][]): FretPosition[] {
   const M = segment.length;
@@ -180,68 +160,43 @@ function dpSegment(segment: FretPosition[][]): FretPosition[] {
   const dp: number[][] = [];
   const prev: (number | null)[][] = [];
 
-  dp[0] = [];
-  prev[0] = [];
-  const cand0 = segment[0];
-  for (let k = 0; k < cand0.length; k++) {
-    dp[0][k] = localCost(cand0[k]);
-    prev[0][k] = null;
-  }
+  dp[0] = segment[0].map((c) => localCost(c));
+  prev[0] = segment[0].map(() => null);
 
   for (let i = 1; i < M; i++) {
-    const candI = segment[i];
-    dp[i] = new Array(candI.length);
-    prev[i] = new Array(candI.length);
-
-    for (let k = 0; k < candI.length; k++) {
-      const posK = candI[k];
-      let bestCost = Infinity;
-      let bestPred: number | null = null;
-
+    dp[i] = [];
+    prev[i] = [];
+    for (let k = 0; k < segment[i].length; k++) {
+      let best = Infinity;
+      let bestJ: number | null = null;
       for (let j = 0; j < segment[i - 1].length; j++) {
-        const cost = dp[i - 1][j] + transitionCost(segment[i - 1][j], posK);
-        if (cost < bestCost) {
-          bestCost = cost;
-          bestPred = j;
-        }
+        const c = dp[i - 1][j] + transCost(segment[i - 1][j], segment[i][k]);
+        if (c < best) { best = c; bestJ = j; }
       }
-
-      dp[i][k] = bestCost + localCost(posK);
-      prev[i][k] = bestPred;
+      dp[i][k] = best + localCost(segment[i][k]);
+      prev[i][k] = bestJ;
     }
   }
 
-  const path: FretPosition[] = new Array(M);
+  const result: FretPosition[] = new Array(M);
   let bestLast = 0;
-  let bestLastCost = dp[M - 1][0];
   for (let k = 1; k < dp[M - 1].length; k++) {
-    if (dp[M - 1][k] < bestLastCost) {
-      bestLastCost = dp[M - 1][k];
-      bestLast = k;
-    }
+    if (dp[M - 1][k] < dp[M - 1][bestLast]) bestLast = k;
   }
-
-  path[M - 1] = segment[M - 1][bestLast];
+  result[M - 1] = segment[M - 1][bestLast];
   for (let i = M - 2; i >= 0; i--) {
-    const predIdx = prev[i + 1][bestLast];
-    if (predIdx === null) {
-      path[i] = segment[i][0];
-    } else {
-      path[i] = segment[i][predIdx];
-      bestLast = predIdx;
-    }
+    const p = prev[i + 1][bestLast];
+    result[i] = segment[i][p ?? 0];
+    bestLast = p ?? 0;
   }
-
-  return path;
+  return result;
 }
 
-function computeSegmentCost(path: FretPosition[]): number {
-  let cost = 0;
+function pathCost(path: FretPosition[]): number {
+  let c = 0;
   for (let i = 0; i < path.length; i++) {
-    cost += localCost(path[i]);
-    if (i > 0) {
-      cost += transitionCost(path[i - 1], path[i]);
-    }
+    c += localCost(path[i]);
+    if (i > 0) c += transCost(path[i - 1], path[i]);
   }
-  return cost;
+  return c;
 }

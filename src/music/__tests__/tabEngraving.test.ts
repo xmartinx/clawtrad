@@ -27,15 +27,16 @@ describe('skipped notes use "x" marker', () => {
     expect(doc.diagnostics.unplayableCount).toBeGreaterThanOrEqual(1);
   });
 
-  it('Visual tab layout includes skipped events as "x"', () => {
+  it('Visual tab layout handles unplayable notes as rests (v0.2.5)', () => {
     const parsed = parseAbc(`X:1\nT:Test\nM:4/4\nL:1/8\nK:D\nC,2 D2 |`);
     const arrangement = arrangeMelody(parsed, openG, 'melody-only');
     const doc = buildTabDocument(parsed, arrangement);
     const layout = computeLayout(doc);
 
     const allEvents = layout.systems.flatMap((s) => s.events);
-    const skipped = allEvents.filter((e) => e.kind === 'skipped');
-    expect(skipped.length).toBeGreaterThan(0);
+    // v0.2.5: unplayable notes are rests, not skipped/x markers
+    const rests = allEvents.filter((e) => e.kind === 'rest');
+    expect(rests.length).toBeGreaterThan(0);
   });
 });
 

@@ -115,14 +115,15 @@ D2 E2 F2 G2 | A2 B2 c2 d2 |`;
     expect(doc.diagnostics.restCount).toBeGreaterThanOrEqual(2);
   });
 
-  it('unplayable notes produce skipped events', () => {
+  it('unplayable notes produce rest events (not skipped/x markers)', () => {
     // C,2 is too low for banjo (C3 = MIDI 48)
     const parsed = parseAbc(`X:1\nT:T\nM:4/4\nL:1/8\nK:D\nC,2 D2 E2 |`);
     const arrangement = arrangeMelody(parsed, openG, 'melody-only');
     const doc = buildTabDocument(parsed, arrangement);
 
-    const skipped = doc.measures[0].events.filter((e) => e.kind === 'skipped');
-    expect(skipped.length).toBeGreaterThanOrEqual(1);
+    // v0.2.5: unplayable notes become rests, not "skipped" with x markers
+    const rests = doc.measures[0].events.filter((e) => e.kind === 'rest');
+    expect(rests.length).toBeGreaterThanOrEqual(1);
     expect(doc.diagnostics.unplayableCount).toBeGreaterThanOrEqual(1);
   });
 

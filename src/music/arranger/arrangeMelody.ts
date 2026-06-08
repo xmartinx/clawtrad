@@ -1,11 +1,11 @@
-/** Melody-to-tab arrangement engine — v0.2.4.
+/** Melody-to-tab arrangement engine — v0.2.5.
  *
  *  Uses dynamic-programming global-path optimisation.
  *
- *  v0.2.4: For each note, generates candidates at both the original
- *  pitch and one octave lower (pitch − 12).  The DP selects whichever
- *  produces a better banjo placement.  A diagnostic warning is emitted
- *  when the lower octave was preferred.
+ *  v0.2.5: Each tuning carries a `pitchOffset` that shifts ABC pitches
+ *  into the banjo's natural range.  For standard tunings this is −12,
+ *  so ABC D4 maps to the 4th-string open D3.  No optional "try both
+ *  octaves" — the offset is deterministic per tuning.
  */
 
 import type { ParsedAbcTune } from '../abc/types';
@@ -22,52 +22,31 @@ export function arrangeMelody(
 ): TabArrangement {
   const warnings: string[] = [...tune.warnings];
   let unplayableCount = 0;
-  let octaveLowerUsed = false;
 
-  // ── build candidate groups (original + octave-lower) ───────
+  // ── build candidate groups with per-tuning pitch offset ──────
   const candidateGroups: FretPosition[][] = [];
 
   for (const note of tune.notes) {
-    const original = findPositions(note.pitch, tuning);
-    const lower = findPositions(note.pitch - 12, tuning);
+    const banjoPitch = note.pitch + tuning.pitchOffset;
+    const candidates = findPositions(banjoPitch, tuning);
 
-    if (original.length === 0 && lower.length === 0) {
+    if (candidates.length === 0) {
       candidateGroups.push([]);
       unplayableCount++;
       warnings.push(
-        `Note ${note.raw} (MIDI ${note.pitch}) has no playable position ` +
-        `within frets 0–10 in ${tuning.name}. Skipped.`,
+        `Note ${note.raw} (ABC MIDI ${note.pitch}, banjo ${banjoPitch}) ` +
+        `has no playable position in ${tuning.name}. Skipped.`,
       );
       continue;
     }
 
-    // Mark lower-octave candidates so scoring can prefer them
-    const lowerMarked = lower.map((p) => ({
-      ...p,
-      originalPitch: note.pitch,
-    }));
-
-    // Combine: original first (bias towards original), then lower
-    candidateGroups.push([...original, ...lowerMarked]);
+    candidateGroups.push(candidates);
   }
 
-  // Check after DP if octave-lower was chosen
+  // ── DP global optimisation ──────────────────────────────────
   const dpResult = findOptimalPath(candidateGroups);
 
-  for (const pos of dpResult.path) {
-    if (pos?.originalPitch !== undefined && pos.pitch < pos.originalPitch) {
-      octaveLowerUsed = true;
-    }
-  }
-
-  if (octaveLowerUsed) {
-    warnings.push(
-      'Melody placed one octave lower for banjo range. ' +
-      'Fret positions may differ from the original pitch.',
-    );
-  }
-
-  // ── build columns ──────────────────────────────────────────
+  // ── build columns ───────────────────────────────────────────
   const columns: TabColumn[] = [];
 
   for (let i = 0; i < tune.notes.length; i++) {
