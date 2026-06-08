@@ -130,6 +130,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2.3: Align visual tab with banjo engraving conventions
+
+**Decision:** Add target-style visual elements (measure numbers, time signature, "x" for skipped notes, rhythm stems, chord labels) before adding new musical features like jigs or drop-thumb.
+**Reason:** The product's usefulness depends on players recognising the output as readable banjo tab. Visual conventions are more important at this stage than expanding musical scope. Skipped notes as "x" on the expected string follows common tab practice. Chord labels are display-only — they do not affect the arrangement.
+
+---
+
+## 2025-06-08 — Chord labels as display-only annotations
+
+**Decision:** Capture chord symbols from quoted ABC annotations (e.g., `"D"`, `"Em"`) and render them above notes in the visual tab, but do not use them in arrangement.
+**Reason:** Chord symbols provide useful context for players but should not influence the melody-to-tab mapping in v0.2.3. The arrangement engine is melody-only. Chords are purely decorative at this stage.
+
+---
+
 ## 2025-06-08 — v0.2.1: Visual tab wrapping and copy-to-clipboard before new musical features
 
 **Decision:** Prioritise visual tab usability (line wrapping, copy-to-clipboard, print styling) before expanding musical scope to jigs, drop-thumb, or ornamentation.

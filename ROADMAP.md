@@ -41,17 +41,26 @@
 - [x] Print-friendly CSS styling
 - [x] Layout calculator (pure functions, testable)
 
-## v0.2.2 — Real-World ABC Compatibility Pass ✅ (current)
+## v0.2.2 — Real-World ABC Compatibility Pass ✅
 
 - [x] Tolerate comments (%), line continuations, blank lines
 - [x] Handle missing K:/M:/L: with fallbacks and warnings
-- [x] Support all common ABC headers (R, C, S, Z, N, etc.)
+- [x] Support all common ABC headers
 - [x] Multiple T: lines preserved
 - [x] Ignore slurs/ties, first/second endings, +decorations+
 - [x] Deduplicated, specific warning messages
 - [x] ParseDiagnostics with feature detection
-- [x] Manual QA documentation (`docs/manual_abc_qa.md`)
-- [x] `manual-test-inputs/` gitignored for private testing
+- [x] Manual QA documentation
+
+## v0.2.3 — Banjo Tab Engraving Style Pass ✅ (current)
+
+- [x] Measure numbers at start of each system
+- [x] Time signature at first system
+- [x] Skipped notes shown as "x" on expected string
+- [x] Rhythm stems below tab (with beam flag for short notes)
+- [x] Chord labels captured from quoted ABC, rendered above notes
+- [x] Chord labels are display-only (do not affect arrangement)
+- [x] Tab style reference documentation (`docs/tab_style_reference.md`)
 - [ ] PDF export of tab
 - [ ] Tuning recommendation based on tune key/range
 - [ ] Improved drone placement (off-beat drones, simple patterns)

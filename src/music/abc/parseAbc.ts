@@ -74,6 +74,7 @@ export function parseAbc(input: string): ParsedAbcTune {
   const defaultLen = parseNoteLength(defaultNoteLength);
   let currentLen = defaultLen;
   let pendingAccidental: string | null = null;
+  let pendingChord: string | null = null;
   let barlineCount = 0;
 
   const tokenRE = buildTokenRegex();
@@ -109,9 +110,15 @@ export function parseAbc(input: string): ParsedAbcTune {
       skippedTokens++; continue;
     }
 
-    // Chord / text annotations in quotes
+    // Chord / text annotations in quotes — capture as label
     if (/^"/.test(token) && /"$/.test(token)) {
-      addWarning('Chord symbols were ignored: tab is generated from melody only.');
+      const chordText = token.slice(1, -1).trim();
+      // Only capture if it looks like a chord symbol (letters, optional #/b/m/M)
+      if (/^[A-Ga-g][#b]?(m|min|maj|dim|aug|sus)?[0-9]?$/.test(chordText)) {
+        pendingChord = chordText;
+      } else {
+        addWarning('Chord symbols were ignored: tab is generated from melody only.');
+      }
       skippedTokens++; continue;
     }
 
@@ -153,7 +160,11 @@ export function parseAbc(input: string): ParsedAbcTune {
       }
 
       notes.push({ pitch, duration: dur, raw: token });
-      rhythmEvents.push({ kind: 'note', duration: dur, pitch, raw: token });
+      rhythmEvents.push({
+        kind: 'note', duration: dur, pitch, raw: token,
+        chordLabel: pendingChord ?? undefined,
+      });
+      pendingChord = null;
       continue;
     }
 

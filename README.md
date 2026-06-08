@@ -6,7 +6,7 @@ Paste an Irish tune. Choose a tuning. Get a clawhammer tab starting point.
 
 ## Current Status
 
-**v0.2.2 — Real-World ABC Compatibility.** Tolerant parser handles comments, missing headers, slurs/ties, and unsupported features gracefully. Clear, deduplicated warnings. SVG visual tab with line wrapping. 184 tests.
+**v0.2.3 — Banjo Tab Engraving.** SVG tab with measure numbers, time signature, rhythm stems, chord labels, and "x" markers for skipped notes. Tolerant ABC parser with clear warnings. Line wrapping. 195 tests.
 
 ## Quick Start
 

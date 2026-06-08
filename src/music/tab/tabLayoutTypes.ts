@@ -47,10 +47,12 @@ export interface TabEvent {
   stringIndex?: number;
   /** Fret number (0 = open). Only for note/drone events. */
   fret?: number;
-  /** Human label, e.g. "z" for rest, "—" for skipped. */
+  /** Human label, e.g. "z" for rest, "x" for skipped. */
   label?: string;
   /** MIDI pitch of the source melody note, if applicable. */
   sourcePitch?: number;
+  /** Chord symbol label (e.g. "D", "Em") for display above the note. */
+  chordLabel?: string;
   /** Optional warning for this specific event. */
   warning?: string;
 }

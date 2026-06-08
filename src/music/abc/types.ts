@@ -69,6 +69,8 @@ export interface RhythmEvent {
   duration: number;
   /** MIDI pitch — present only for note events. */
   pitch?: number;
+  /** Chord symbol label (e.g. "D", "Em") from quoted ABC annotation. */
+  chordLabel?: string;
   /** The raw ABC token that produced this event. */
   raw: string;
 }

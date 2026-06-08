@@ -77,7 +77,7 @@ export function buildTabDocument(
           kind: 'skipped',
           duration: evt.duration,
           beatPosition,
-          label: '?',
+          label: 'x',
           sourcePitch: evt.pitch,
         });
         unplayableCount++;
@@ -91,7 +91,7 @@ export function buildTabDocument(
           kind: 'skipped',
           duration: evt.duration,
           beatPosition,
-          label: '—',
+          label: 'x',
           sourcePitch: evt.pitch,
           warning: `Note ${evt.raw} unplayable in this tuning`,
         });
@@ -112,6 +112,7 @@ export function buildTabDocument(
         stringIndex: played ? played.string - 1 : undefined,
         fret: played?.fret,
         sourcePitch: evt.pitch,
+        chordLabel: evt.chordLabel,
       });
       noteCount++;
 

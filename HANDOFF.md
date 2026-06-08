@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**v0.2.2 — Real-World ABC Compatibility Pass complete.** Parser now tolerates comments, line continuations, slurs/ties, endings, +decorations+, missing headers, unknown headers, multiple T: lines. Warnings deduplicated and improved. 184 tests pass.
+**v0.2.3 — Banjo Tab Engraving Style Pass complete.** Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08
-- **Previous commit:** `f05858c` — feat: improve visual tab wrapping and copy support
+- **Previous commit:** `4205708` — feat: improve abc compatibility and warnings
 
 ## Commands
 
@@ -172,6 +172,6 @@ Alternatively:
 
 ## Last Completed Task
 
-v0.2.2 Real-World ABC Compatibility Pass: tolerant parser, comment handling, missing header fallbacks, improved warnings, 184 tests, manual QA doc. Commit pending.
+v0.2.3 Banjo Tab Engraving Style Pass: measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), 195 tests, style reference doc. Commit pending.
 
 

@@ -35,6 +35,8 @@ export interface TabSystem {
   index: number;
   /** Indices of measures included in this system. */
   measureIndices: number[];
+  /** 1-based measure number of the first measure in this system. */
+  startMeasureNumber: number;
   /** All events in this system with computed x positions. */
   events: PositionedEvent[];
   /** x positions of barlines within the system (relative to LEFT_MARGIN). */
@@ -50,6 +52,8 @@ export interface SystemLayout {
   maxContentWidth: number;
   /** Number of systems. */
   systemCount: number;
+  /** Time signature string (e.g. "4/4") from the document. */
+  timeSignature: string;
 }
 
 /* ── Layout computation ────────────────────────────────────── */
@@ -120,6 +124,7 @@ export function computeLayout(
     systems,
     maxContentWidth,
     systemCount: systems.length,
+    timeSignature: doc.meter,
   };
 }
 
@@ -140,5 +145,12 @@ function finishSystem(
   barlines: number[],
   contentWidth: number,
 ): TabSystem {
-  return { index, measureIndices, events, barlines, contentWidth };
+  return {
+    index,
+    measureIndices,
+    startMeasureNumber: measureIndices.length > 0 ? measureIndices[0] + 1 : 1,
+    events,
+    barlines,
+    contentWidth,
+  };
 }

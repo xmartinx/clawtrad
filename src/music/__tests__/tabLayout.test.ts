@@ -182,7 +182,7 @@ describe('tab layout calculator', () => {
     const measure: TabMeasure = {
       index: 0,
       events: [
-        { kind: 'skipped', duration: 0.125, beatPosition: 0, label: '—', sourcePitch: 48 },
+        { kind: 'skipped', duration: 0.125, beatPosition: 0, label: 'x', sourcePitch: 48 },
         { kind: 'note', duration: 0.125, beatPosition: 0.125, stringIndex: 0, fret: 0 },
       ],
     };

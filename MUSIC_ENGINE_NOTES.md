@@ -77,19 +77,30 @@ Selection is **dynamic programming (Viterbi-style)**: the algorithm finds the gl
 
 In basic clawhammer mode, the melody-only path is taken and simple 5th-string drone markers are added on strong beats (beats 1 and 3 in 4/4). The drone is marked by showing the 5th string as open (fret 0) in columns that already contain a melody note.
 
-## Rhythmic Tab Rendering (v0.2)
+## Rhythmic Tab Rendering (v0.2.3)
 
 The TabDocument model preserves rhythmic structure from ABC input:
 - Notes and rests are interleaved in order as `RhythmEvent[]`
 - Barlines separate measures; each `TabMeasure` resets beat position
 - Event durations scale horizontal spacing in the SVG renderer
-- Rests appear as "z" markers; skipped notes as "—"
+- Rests appear as "z" markers; skipped notes as "x" on the expected string
+- Rhythm stems below tab: simple vertical lines, beam flags for ≤ 1/8 notes
+- Chord labels (from quoted ABC) appear above notes, display-only
+
+### Reel Rhythm Display
+
+For 4/4 reel input with L:1/8:
+- Notes are displayed with their actual parsed durations
+- No implicit doubling or halving of note values
+- Horizontal spacing (24px per 1/8 note) gives readable separation
+- Longer notes get taller stems; eighth notes get beam flags
+- A future version may add a "display value" mapping for reels vs hornpipes vs jigs
 
 Current rhythmic simplifications:
 - No tuplet-aware spacing
 - No dotted-note visual distinction beyond proportional width
-- No tie/slur rendering
-- SVG does not line-wrap; very long tunes produce very wide output
+- No connected beams across adjacent short notes
+- No tie/slur rendering in visual tab
 
 ## Current Simplifications
 
