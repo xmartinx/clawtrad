@@ -4,6 +4,10 @@
 
 **v0.1 — MVP complete.** Working prototype with ABC parsing, three tunings, melody-to-tab arrangement, and plain-text tab output. All 54 unit tests pass.
 
+- **Branch:** `master`
+- **Latest commit:** `94476ae` — fix: remove unused parseTuning import in tunings test
+- **Date:** 2025-06-08
+
 ## Commands
 
 ```bash
