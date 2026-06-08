@@ -1,0 +1,260 @@
+:root {
+  --text: #333;
+  --text-muted: #666;
+  --text-h: #1a1a1a;
+  --bg: #fafafa;
+  --bg-card: #fff;
+  --border: #ddd;
+  --accent: #8b4513;
+  --accent-bg: rgba(139, 69, 19, 0.08);
+  --accent-border: rgba(139, 69, 19, 0.3);
+  --warn-bg: #fff8e1;
+  --warn-border: #ffc107;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
+
+  font: 16px/1.5 var(--sans);
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #ccc;
+    --text-muted: #999;
+    --text-h: #eee;
+    --bg: #1a1a1a;
+    --bg-card: #242424;
+    --border: #444;
+    --accent: #d4a574;
+    --accent-bg: rgba(212, 165, 116, 0.1);
+    --warn-bg: #332d1a;
+    --warn-border: #665500;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+h1, h2, h3 {
+  font-family: var(--sans);
+  color: var(--text-h);
+  margin: 0;
+}
+
+h1 {
+  font-size: 36px;
+  letter-spacing: -0.5px;
+}
+
+h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+p {
+  margin: 0 0 8px;
+}
+
+/* ── Header ────────────────────────────── */
+
+.app-header {
+  text-align: center;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tagline {
+  color: var(--text-muted);
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+/* ── Layout ────────────────────────────── */
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Input Section ─────────────────────── */
+
+.input-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ── ABC Textarea ──────────────────────── */
+
+.abc-input label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.abc-input textarea {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+}
+
+.abc-input textarea:focus {
+  outline: 2px solid var(--accent-border);
+  outline-offset: -2px;
+}
+
+/* ── Selectors ─────────────────────────── */
+
+.tuning-selector label,
+.mode-selector label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.tuning-selector select,
+.mode-selector select {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  max-width: 220px;
+}
+
+/* ── Generate Button ───────────────────── */
+
+.generate-btn {
+  align-self: flex-end;
+  padding: 10px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.generate-btn:hover {
+  opacity: 0.9;
+}
+
+.generate-btn:active {
+  opacity: 0.8;
+}
+
+/* ── Preview / Output ──────────────────── */
+
+.preview-section,
+.output-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.notation-fallback {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Tab Output ────────────────────────── */
+
+.tab-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  background: var(--bg);
+  padding: 16px;
+  border-radius: 6px;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.tab-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Warning Panel ─────────────────────── */
+
+.warning-panel {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: 6px;
+}
+
+.warning-panel ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.warning-panel li {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+/* ── Footer ────────────────────────────── */
+
+.app-footer {
+  text-align: center;
+  padding: 24px 0 16px;
+  margin-top: 32px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.footer-note {
+  font-size: 12px;
+  margin-top: 4px;
+}
