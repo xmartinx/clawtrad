@@ -67,7 +67,7 @@ export function arrangeMelody(
 
   let result: TabArrangement = {
     title: tune.title,
-    tuning: tuning.name,
+    tuning: tuning.notation,  // canonical ID for downstream lookup
     mode,
     columns,
     warnings,

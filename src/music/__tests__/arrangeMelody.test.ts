@@ -84,7 +84,7 @@ K:G
       const arrangement = arrangeMelody(parsed, doubleD, 'melody-only');
 
       expect(arrangement.columns.length).toBeGreaterThan(0);
-      expect(arrangement.tuning).toBe('Double D');
+      expect(arrangement.tuning).toBe('aDADE');  // v0.2.6: now tuning notation, not name
     });
   });
 

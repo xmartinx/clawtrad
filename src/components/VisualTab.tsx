@@ -213,20 +213,22 @@ function renderBeamedPair(
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
-  const stemBaseY = tabBottom + STEM_BELOW;
-  const stemTopY = stemBaseY + MIN_STEM;
+  // Stem y1 reaches from the note's string position, not from below the tab
+  const aStemY = stemYForEvent(a, y);
+  const bStemY = stemYForEvent(b, y);
+  const beamY = tabBottom + STEM_BELOW + MIN_STEM;
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Vertical stems */}
-      <line x1={ax} y1={stemBaseY} x2={ax} y2={stemTopY}
+      {/* Stems: from note position down to beam */}
+      <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
         stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
-      <line x1={bx} y1={stemBaseY} x2={bx} y2={stemTopY}
+      <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
         stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
-      {/* Horizontal beam */}
-      <line x1={ax} y1={stemTopY} x2={bx} y2={stemTopY}
+      {/* Beam connecting stems */}
+      <line x1={ax} y1={beamY} x2={bx} y2={beamY}
         stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
     </g>,
   ];
@@ -244,14 +246,34 @@ function renderSingleEvent(
 ): React.ReactNode {
   const key = `ev-${systemIndex}-${idx}`;
   const dur = evt.duration ?? 0.125;
+  const needsStem = dur > 0 && (evt.kind === 'note' || evt.kind === 'rest' || evt.kind === 'drone');
+  const stemY = needsStem ? stemYForEvent(evt, y) : tabBottom;
 
   return (
     <g key={key}>
       {renderEventMarker(evt, cx, y, key)}
-      {evt.kind !== 'rest' && dur > 0 && dur >= 0.25 && renderStem(cx, tabBottom, dur)}
-      {evt.kind === 'rest' && dur > 0 && renderStem(cx, tabBottom, dur)}
+      {needsStem && renderStemFrom(cx, stemY, tabBottom + STEM_BELOW, dur)}
     </g>
   );
+}
+
+/** Compute stem start y from the event's string position. */
+function stemYForEvent(
+  evt: { kind: string; stringIndex?: number },
+  y: number,
+): number {
+  // For notes: stem starts at the fret number (slightly below the string line)
+  // For drones: stem starts at string 5 (bottom) line
+  // For rests: stem starts at middle of tab
+  if (evt.kind === 'note') {
+    const si = evt.stringIndex ?? 0;
+    return y + si * STRING_SPACING + 8; // just below the fret number
+  }
+  if (evt.kind === 'drone') {
+    return y + 4 * STRING_SPACING + 8;
+  }
+  // rest: middle strings
+  return y + 2 * STRING_SPACING + 5;
 }
 
 /* ── Event marker ──────────────────────────────────────────── */
@@ -295,11 +317,14 @@ function renderEventMarker(
 
 /* ── Stem ──────────────────────────────────────────────────── */
 
-function renderStem(cx: number, tabBottom: number, dur: number): React.ReactNode {
-  const base = tabBottom + STEM_BELOW;
-  const sh = dur >= 0.5 ? MAX_STEM : dur >= 0.25 ? 20 : MIN_STEM;
+/** Render a stem from `yFrom` (note position) down to `yTo` (beam area). */
+function renderStemFrom(
+  cx: number, yFrom: number, yTo: number, dur: number,
+): React.ReactNode {
+  const sh = (dur >= 0.5 ? MAX_STEM : dur >= 0.25 ? 20 : MIN_STEM);
+  const yEnd = Math.max(yTo, yFrom + sh);
   return (
-    <line x1={cx} y1={base} x2={cx} y2={base + sh}
+    <line x1={cx} y1={yFrom} x2={cx} y2={yEnd}
       stroke="currentColor" strokeWidth={BEAM_THICKNESS - 0.2} />
   );
 }

@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**v0.2.5 — Tab Spec, Pitch Model, and Rhythm Foundation complete.** Double C tuning added. Pitch anchoring via per-tuning offset. No x markers in normal output. Tuning letter labels. Rhythm grid and beaming model. Three new spec docs. 213 tests pass. Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
+**v0.2.6 — Rhythm Grid and Tuning Wiring Correction complete.** Beat preservation fixed (quarter notes span 2 eighth slots). Double C wired end-to-end (notation as canonical tuning ID). Stems reach from note position down to beam. 232 tests pass. Double C tuning added. Pitch anchoring via per-tuning offset. No x markers in normal output. Tuning letter labels. Rhythm grid and beaming model. Three new spec docs. 213 tests pass. Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08

@@ -7,6 +7,7 @@
 import type { ParsedAbcTune } from '../abc/types';
 import type { TabArrangement, TabColumn } from '../banjo/tabTypes';
 import type { TabDocument, TabMeasure, TabEvent, TabDiagnostics } from './tabLayoutTypes';
+import { TUNINGS } from '../banjo/tunings';
 
 /**
  * Build a TabDocument from parsed ABC and the computed arrangement.
@@ -139,12 +140,16 @@ export function buildTabDocument(
     measureCount: measures.length,
   };
 
+  // Resolve tuning label from notation string
+  const tuningMeta = TUNINGS.find((t) => t.notation === arrangement.tuning);
+  const tuningLabel = tuningMeta?.name ?? arrangement.tuning;
+
   return {
     title: tune.title,
     key: tune.keySignature,
     meter: tune.meter,
     tuningId: arrangement.tuning,
-    tuningLabel: arrangement.tuning,
+    tuningLabel,
     mode: arrangement.mode,
     measures,
     warnings: arrangement.warnings,
