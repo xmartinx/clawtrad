@@ -29,8 +29,10 @@ const WEIGHTS = {
   jumpPenaltyPerString: -2,
   /** Bonus for staying on same string. */
   sameString: 3,
-  /** Extra bonus for same-string moves ≤ 3 frets (H/P/Sl candidates). */
-  sameStringClose: 5,
+  /** Extra bonus for same-string moves ≤ 3 frets (H/P/Sl candidates).
+   *  Must be strong enough to overcome open-string attraction for
+   *  second-slot melody notes (e.g. c→d on string 2 vs open string 1). */
+  sameStringClose: 8,
 } as const;
 
 /* ── Intrinsic position score (higher = better) ──────────── */

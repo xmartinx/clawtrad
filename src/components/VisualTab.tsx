@@ -169,7 +169,7 @@ function renderSystemEvents(
     if (
       group.length === 2 &&
       isShortNote(group[0]) && isShortNote(group[1]) &&
-      group[0].kind !== 'drone' && group[1].kind !== 'drone'
+      !(group[0].kind === 'drone' && group[1].kind === 'drone')
     ) {
       elements.push(...renderBeamedPair(
         group[0], group[1], systemIndex, elements.length, y, tabBottom,
