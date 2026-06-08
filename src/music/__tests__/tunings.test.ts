@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   TUNING_DEFINITIONS,
   TUNINGS,
-  parseTuning,
 } from '../banjo/tunings';
 
 describe('tuning definitions', () => {
