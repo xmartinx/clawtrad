@@ -77,13 +77,26 @@ Selection is **dynamic programming (Viterbi-style)**: the algorithm finds the gl
 
 In basic clawhammer mode, the melody-only path is taken and simple 5th-string drone markers are added on strong beats (beats 1 and 3 in 4/4). The drone is marked by showing the 5th string as open (fret 0) in columns that already contain a melody note.
 
+## Rhythmic Tab Rendering (v0.2)
+
+The TabDocument model preserves rhythmic structure from ABC input:
+- Notes and rests are interleaved in order as `RhythmEvent[]`
+- Barlines separate measures; each `TabMeasure` resets beat position
+- Event durations scale horizontal spacing in the SVG renderer
+- Rests appear as "z" markers; skipped notes as "—"
+
+Current rhythmic simplifications:
+- No tuplet-aware spacing
+- No dotted-note visual distinction beyond proportional width
+- No tie/slur rendering
+- SVG does not line-wrap; very long tunes produce very wide output
+
 ## Current Simplifications
 
 - **No chords**: All input is treated as monophonic melody
 - **No ornamentation**: Rolls, cuts, triplets, slides, hammer-ons, pull-offs are not processed
 - **No drop-thumb**: Right-hand patterns are not modeled
 - **No brush**: Only single-note melody with optional drone
-- **No rhythmic variation**: Durations are parsed but not used for arrangement decisions
 - **4/4 only**: Other time signatures are parsed but drone logic assumes 4/4
 - **ABC parser limitations**:
   - No chords / multi-voice (detected, warned, skipped)

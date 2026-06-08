@@ -20,6 +20,8 @@ export interface ParsedAbcTune {
   warnings: string[];
   /** Count of tokens that were skipped (rests, unsupported constructs) */
   skippedTokens: number;
+  /** Rhythm events in order: notes, rests, and barlines as encountered. */
+  rhythmEvents: RhythmEvent[];
 }
 
 /** A single note event from ABC notation. */
@@ -29,6 +31,21 @@ export interface AbcNote {
   /** Duration as a fraction of a whole note (e.g. 0.125 = 1/8) */
   duration: number;
   /** The raw ABC token that produced this note */
+  raw: string;
+}
+
+/**
+ * A rhythmic event that may be a note or a rest.
+ * Captured in order from the ABC body so downstream consumers
+ * can preserve rhythmic structure even when notes are unplayable.
+ */
+export interface RhythmEvent {
+  kind: 'note' | 'rest' | 'barline';
+  /** Duration as a fraction of a whole note. 0 for barlines. */
+  duration: number;
+  /** MIDI pitch — present only for note events. */
+  pitch?: number;
+  /** The raw ABC token that produced this event. */
   raw: string;
 }
 

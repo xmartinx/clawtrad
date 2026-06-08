@@ -6,7 +6,7 @@ Paste an Irish tune. Choose a tuning. Get a clawhammer tab starting point.
 
 ## Current Status
 
-**v0.1 — MVP.** Working prototype with basic ABC parsing, three tunings, melody-to-tab arrangement, and plain-text tab output.
+**v0.2 — Rhythmic Tab Rendering Foundation.** SVG visual tab with rhythmic structure (notes, rests, barlines, drone markers). Plain-text tab fallback. Dynamic-programming arrangement engine. 143 tests.
 
 ## Quick Start
 

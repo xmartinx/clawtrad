@@ -102,6 +102,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-08 — v0.2: SVG/HTML visual tab renderer with internal TabDocument model
+
+**Decision:** Use SVG/HTML for the v0.2 visual tab renderer, backed by a pure-data TabDocument model, rather than Canvas.
+**Reason:** SVG/HTML is easier to inspect, test, print, scale, and later export to PDF. Canvas remains deferred until there is a demonstrated need (e.g., performance with very large scores). The TabDocument model decouples arrangement data from presentation, supporting multiple renderers (SVG, plain text, future PDF).
+
+---
+
+## 2025-06-08 — TabDocument as pure data model
+
+**Decision:** Introduce `src/music/tab/` with types (`tabLayoutTypes.ts`) and a builder (`buildTabDocument.ts`) that convert arrangement output into a renderer-agnostic document.
+**Reason:** Clean separation of concerns. The arrangement engine produces (string, fret) positions; the TabDocument adds rhythmic structure (rests, barlines, measure grouping) needed for visual rendering. Both the SVG component and plain-text renderer can consume the same model.
+
+---
+
 ## 2025-06-08 — Dynamic programming for position selection (replaces greedy)
 
 **Decision:** Replace greedy position selection with Viterbi-style dynamic programming that finds the globally optimal (string, fret) path.

@@ -35,31 +35,36 @@ src/
       clawhammer.ts            # Basic drone-adding logic
     render/
       asciiTab.ts              # Plain-text ASCII tab renderer
+    tab/
+      tabLayoutTypes.ts        # TabDocument data model (v0.2)
+      buildTabDocument.ts      # TabDocument builder from arrangement (v0.2)
     __tests__/                 # Unit tests (co-located)
   components/
     AbcInput.tsx               # ABC paste textarea
     TuningSelector.tsx         # Tuning dropdown
     ModeSelector.tsx           # Melody-only vs clawhammer mode
     NotationPreview.tsx        # abcjs standard notation render
-    TabOutput.tsx              # Tab text display
+    VisualTab.tsx              # SVG visual tab renderer (v0.2)
+    TabOutput.tsx              # Plain-text tab display (fallback)
     WarningPanel.tsx           # Parser/arranger warnings
   test-fixtures/
     simple-d-reel.abc          # Sample D major reel
     simple-g-reel.abc          # Sample G major reel
 ```
 
-## Data Flow
+## Data Flow (v0.2)
 
 ```
 ABC text input
-  → parseAbc() → ParsedAbcTune { title, keySignature, notes[] }
+  → parseAbc() → ParsedAbcTune { title, keySignature, notes[], rhythmEvents[] }
     → arrangeMelody(tune, tuning, mode)
       → findPositions() per note → candidates[]
-      → selectBestPosition(candidates, prev) → FretPosition
-      → (if clawhammer) addBasicClawhammerDrones()
+      → findOptimalPath(candidateGroups) → DP global path
+      → (if clawhammer) addBasicClawhammerDrones() [mutates in place]
     → TabArrangement { columns[], warnings[] }
-  → renderAsciiTab(arrangement, tuning) → plain text
-→ TabOutput component displays text
+  → buildTabDocument(tune, arrangement) → TabDocument { measures[], diagnostics }
+  → VisualTab component (SVG) — primary display
+  → renderAsciiTab(arrangement, tuning) → plain text — fallback
 ```
 
 ## Arrangement Engine Overview

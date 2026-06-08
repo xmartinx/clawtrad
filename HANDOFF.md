@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**v0.1.1 — Arrangement Engine Reliability Pass complete.** ABC parser significantly improved with proper accidental/key-signature/octave handling. Dynamic-programming global-path arrangement replaces greedy selection. Warning and diagnostic coverage expanded. 124 unit tests pass.
+**v0.2 — Rhythmic Tab Rendering Foundation complete.** TabDocument data model added. SVG visual tab renderer with rhythmic structure, rests, barlines, and drone markers. Plain text tab kept as fallback. 143 tests pass.
 
 - **Branch:** `master`
 - **Date:** 2025-06-08
-- **Previous commit:** `d70a5f8` — docs: update HANDOFF.md with commit hash and date
+- **Previous commit:** `9e925ef` — feat: improve abc parsing and arrangement reliability
 
 ## Commands
 
@@ -36,8 +36,8 @@ npm run lint
 ## Tests Status
 
 ```
- Test Files  7 passed (7)
-      Tests  124 passed (124)
+ Test Files  8 passed (8)
+      Tests  143 passed (143)
 ```
 
 Test files:
@@ -46,8 +46,40 @@ Test files:
 - `src/music/__tests__/fretboard.test.ts` — position finding, fret range
 - `src/music/__tests__/arrangeMelody.test.ts` — melody arrangement, clawhammer, DP, warnings
 - `src/music/__tests__/asciiTab.test.ts` — tab output shape and content
-- `src/music/__tests__/abcParser.test.ts` — header parsing, key signatures, accidentals, octaves, warnings (**new in v0.1.1**)
-- `src/music/__tests__/scoring.test.ts` — intrinsic scores, transitions, DP vs greedy, 5th-string avoidance (**new in v0.1.1**)
+- `src/music/__tests__/abcParser.test.ts` — header parsing, key signatures, accidentals, octaves, warnings
+- `src/music/__tests__/scoring.test.ts` — intrinsic scores, transitions, DP vs greedy, 5th-string avoidance
+- `src/music/__tests__/tabDocument.test.ts` — rhythm events, measure separation, rests, drones, diagnostics (**new in v0.2**)
+
+## What Changed in v0.2
+
+### Tab document model (`src/music/tab/`)
+- `tabLayoutTypes.ts` — TabDocument, TabMeasure, TabEvent, TabDiagnostics types
+- `buildTabDocument.ts` — converts ParsedAbcTune + TabArrangement → TabDocument
+- Pure data model, no React dependency
+- Preserves rhythmic structure: notes, rests, barlines, drones
+
+### Rhythm events (`src/music/abc/parseAbc.ts`, `types.ts`)
+- Extended parser to emit `RhythmEvent[]` alongside notes
+- Rhythm events capture notes, rests, and barlines in order
+- Rest durations preserved from ABC
+
+### Visual tab component (`src/components/VisualTab.tsx`)
+- SVG rendering with 5 horizontal string lines
+- String labels derived from tuning notation
+- Fret numbers on correct strings, proportional to note duration
+- Rest markers ("z"), skipped notes ("—"), drone markers ("d")
+- Barlines between measures
+- Title, tuning, mode, and diagnostics displayed
+
+### UI integration (`src/app/App.tsx`)
+- Visual tab as main output, plain text tab preserved as fallback
+- `buildTabDocument` called in the generate pipeline
+
+### Bug fix (`src/music/arranger/clawhammer.ts`)
+- Fixed mutation bug: `hasDrone` was set on copied column objects that were then discarded
+
+### Tests
+- `tabDocument.test.ts` — 19 tests: rhythm events, measure separation, rests, drones, diagnostics, beat positions
 
 ## What Changed in v0.1.1
 
@@ -94,22 +126,21 @@ Test files:
 
 1. **ABC parser is limited to monophonic melody** — chords, multi-voice, grace notes, tuplets detected and warned but not parsed
 2. **Drone placement is simplistic** — only beats 1 and 3 in 4/4 get drones
-3. **No note duration in tab rendering** — all tab columns equal width regardless of duration
-4. **Rests skipped** — they advance duration but produce no tab column, may cause rhythmic misalignment
-5. **Key signature subset** — flat keys beyond F and Bb, and some modal keys, generate a warning
-6. **DP is deterministic but not perfect** — transition costs are based on heuristics, not ergonomic hand modelling
+3. **SVG tab has basic layout** — no note stems, beams, or proper engraving; proportional spacing but no fine rhythmic placement
+4. **Rests shown as "z"** — no proper rest engraving symbols
+5. **No line wrapping in SVG** — long tunes produce very wide SVGs
+6. **Key signature subset** — flat keys beyond F and Bb, and some modal keys, generate a warning
 7. **Seventh-fret ceiling** — notes requiring fret > 7 are skipped; no octave folding
 
 ## Next Recommended Task
 
-**Better tab rendering (v0.2)** — SVG or HTML canvas rendering with proper note stems, beams, and drone markers. The arrangement engine is now reliable enough to invest in presentation.
+**v0.2 refinements** — copy-to-clipboard for plain text tab, SVG responsive width/line-wrapping, tuning recommendation, or improved drone placement patterns. See `ROADMAP.md` for full v0.2 scope.
 
 Alternatively:
 - **Jig support (v0.3)** — extend drone logic for 6/8 rhythm
-- **Tuning recommendation** — suggest best tuning based on tune key and range
 - **Editable tab** — click to change string/fret assignments
 
 ## Last Completed Task
 
-v0.1.1 Arrangement Engine Reliability Pass: parser overhaul, DP arrangement, expanded key signatures, diagnostics, 124 tests. Commit pending.
+v0.2 Rhythmic Tab Rendering Foundation: TabDocument model, SVG visual tab renderer, rhythm events, rest preservation, drone event fix, 143 tests. Commit pending.
 

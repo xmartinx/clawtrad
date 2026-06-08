@@ -23,7 +23,7 @@
  *  - Ties and slurs
  */
 
-import type { ParsedAbcTune, AbcNote } from './types';
+import type { ParsedAbcTune, AbcNote, RhythmEvent } from './types';
 import { KEY_SIGNATURES } from './types';
 
 /** MIDI pitch for middle C (C4). */
@@ -95,6 +95,7 @@ export function parseAbc(input: string): ParsedAbcTune {
 
   // ── tokenise and parse ──────────────────────────────────────
   const notes: AbcNote[] = [];
+  const rhythmEvents: RhythmEvent[] = [];
   const defaultLen = parseNoteLength(defaultNoteLength);
   let currentLen = defaultLen;
   let pendingAccidental: string | null = null;
@@ -110,8 +111,12 @@ export function parseAbc(input: string): ParsedAbcTune {
     // Structural symbols — skip
     if (/^[\[\]():]$/.test(token)) { skippedTokens++; continue; }
 
-    // Bar/end/repeat markers — skip
-    if (/^\|/.test(token)) { skippedTokens++; continue; }
+    // Bar/end/repeat markers — skip but record as barline event
+    if (/^\|/.test(token)) {
+      skippedTokens++;
+      rhythmEvents.push({ kind: 'barline', duration: 0, raw: token });
+      continue;
+    }
 
     // Standalone accidentals (apply to next note)
     if (/^\^{1,2}$/.test(token)) { pendingAccidental = token; skippedTokens++; continue; }
@@ -142,12 +147,15 @@ export function parseAbc(input: string): ParsedAbcTune {
     // Rest token (z or Z)
     if (/^[zZ]/.test(token)) {
       const restMatch = token.match(/^[zZ]([',]*)(\d*)\/?(\d*)$/);
+      let restDur = currentLen;
       if (restMatch) {
         const [, , numStr, denomStr] = restMatch;
         if (numStr || denomStr) {
-          currentLen = parseExplicitLength(numStr, denomStr, defaultLen);
+          restDur = parseExplicitLength(numStr, denomStr, defaultLen);
+          currentLen = restDur;
         }
       }
+      rhythmEvents.push({ kind: 'rest', duration: restDur, raw: token });
       skippedTokens++; continue;
     }
 
@@ -165,6 +173,7 @@ export function parseAbc(input: string): ParsedAbcTune {
       }
 
       notes.push({ pitch, duration: dur, raw: token });
+      rhythmEvents.push({ kind: 'note', duration: dur, pitch, raw: token });
       continue;
     }
 
@@ -174,7 +183,7 @@ export function parseAbc(input: string): ParsedAbcTune {
 
   return {
     title, keySignature, meter, defaultNoteLength,
-    notes, warnings, skippedTokens,
+    notes, rhythmEvents, warnings, skippedTokens,
   };
 }
 

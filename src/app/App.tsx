@@ -6,11 +6,14 @@ import { TuningSelector } from '../components/TuningSelector';
 import { ModeSelector } from '../components/ModeSelector';
 import { NotationPreview } from '../components/NotationPreview';
 import { TabOutput } from '../components/TabOutput';
+import { VisualTab } from '../components/VisualTab';
 import { WarningPanel } from '../components/WarningPanel';
 import { parseAbc } from '../music/abc/parseAbc';
 import { TUNINGS, type Tuning } from '../music/banjo/tunings';
 import type { OutputMode } from '../music/banjo/tabTypes';
+import type { TabDocument } from '../music/tab/tabLayoutTypes';
 import { arrangeMelody } from '../music/arranger/arrangeMelody';
+import { buildTabDocument } from '../music/tab/buildTabDocument';
 import { renderAsciiTab } from '../music/render/asciiTab';
 
 const DEFAULT_ABC = `X:1
@@ -35,6 +38,7 @@ export const App: React.FC = () => {
   const [tuningNotation, setTuningNotation] = useState('gDGBD');
   const [outputMode, setOutputMode] = useState<OutputMode>('melody-only');
   const [tabText, setTabText] = useState('');
+  const [tabDocument, setTabDocument] = useState<TabDocument | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
@@ -44,6 +48,7 @@ export const App: React.FC = () => {
   const handleGenerate = useCallback(() => {
     const parseResult = parseAbc(abc);
     const arrangement = arrangeMelody(parseResult, selectedTuning, outputMode);
+    const tabDoc = buildTabDocument(parseResult, arrangement);
     const rendered = renderAsciiTab(arrangement, selectedTuning);
 
     // Count unplayable notes from warnings
@@ -52,6 +57,7 @@ export const App: React.FC = () => {
     ).length;
 
     setTabText(rendered);
+    setTabDocument(tabDoc);
     setWarnings(arrangement.warnings);
     setDiagnostics({
       parsedNotes: parseResult.notes.length,
@@ -105,6 +111,13 @@ export const App: React.FC = () => {
         </section>
 
         <section className="output-section">
+          {tabDocument && (
+            <VisualTab document={tabDocument} />
+          )}
+        </section>
+
+        <section className="output-section">
+          <h3>Plain text tab (fallback / export)</h3>
           <TabOutput tabText={tabText} />
         </section>
       </main>

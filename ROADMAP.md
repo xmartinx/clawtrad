@@ -25,15 +25,20 @@
 - [x] Diagnostic summary (note count, skipped count, tuning, mode, unplayable)
 - [x] Comprehensive tests (124 tests, 7 test files)
 
-## v0.2 — Better Rendering, Export, Tuning Recommendation
+## v0.2 — Rhythmic Tab Rendering Foundation 🔄 (current)
 
-- SVG or HTML canvas tab rendering
-- PDF export of tab
-- Copy-to-clipboard for plain text tab
-- Tuning recommendation based on tune key/range
-- Improved drone placement (off-beat drones, simple patterns)
-- Support for 6/8 (jig rhythm awareness, even if drone logic is basic)
-- Handle more ABC features (grace notes as warnings, not breakage)
+- [x] TabDocument internal data model
+- [x] SVG visual tab renderer (5 lines, fret numbers, rests, barlines, drones, labels)
+- [x] Rhythm events in parser (notes + rests + barlines)
+- [x] Rest preservation in tab output
+- [x] Plain text tab kept as fallback
+- [x] Fix clawhammer drone mutation bug
+- [ ] SVG tab line-wrapping for long tunes
+- [ ] Copy-to-clipboard for plain text tab
+- [ ] PDF export of tab
+- [ ] Tuning recommendation based on tune key/range
+- [ ] Improved drone placement (off-beat drones, simple patterns)
+- [ ] Support for 6/8 (jig rhythm awareness, even if drone logic is basic)
 
 ## v0.3 — Jigs, Drop-Thumb, Editable Tab
 
