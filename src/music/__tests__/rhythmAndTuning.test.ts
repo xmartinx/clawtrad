@@ -54,17 +54,16 @@ describe('rhythm grid beat preservation', () => {
     expect(noteEvents.length).toBe(4);
   });
 
-  it('empty slots are after each quarter note for drone fill', () => {
+  it('empty slots are filled by drones in clawhammer mode (v0.2.8)', () => {
+    // In melody-only mode, quarter notes are 0.25 each, producing 4 events.
+    // In clawhammer mode, quarter notes are expanded to melody+drone pairs = 8 events.
     const parsed = parseAbc(`X:1\nT:Test\nM:4/4\nL:1/8\nK:D\nD2 E2 F2 G2 |`);
-    const arrangement = arrangeMelody(parsed, openG, 'melody-only');
+    const arrangement = arrangeMelody(parsed, openG, 'basic-clawhammer');
     const doc = buildTabDocument(parsed, arrangement);
 
-    const measure = doc.measures[0];
-    const grid = buildRhythmGrid(measure.events, 0);
-
-    // Check continuation slots exist
-    const continuations = grid.slots.filter((s) => s.continuation);
-    expect(continuations.length).toBe(4); // one after each quarter note
+    const drones = doc.measures[0].events.filter((e) => e.kind === 'drone');
+    // 4 drones in offbeat slots
+    expect(drones.length).toBe(4);
   });
 
   it('all 8 slots have correct beat and sub values', () => {
@@ -188,7 +187,7 @@ describe('clawhammer rhythm grid', () => {
     expect(sounded.length).toBe(8); // 8 eighth notes
   });
 
-  it('half note D4 produces 4 continuation slots', () => {
+  it('half note D4 plus E2 F2 totals 8 slots', () => {
     const parsed = parseAbc(`X:1\nT:Test\nM:4/4\nL:1/8\nK:D\nD4 E2 F2 |`);
     const arrangement = arrangeMelody(parsed, openG, 'melody-only');
     const doc = buildTabDocument(parsed, arrangement);
@@ -197,8 +196,8 @@ describe('clawhammer rhythm grid', () => {
     const grid = buildRhythmGrid(measure.events, 0);
 
     expect(grid.slots).toHaveLength(8);
-    // D4 = 4 slots, so 3 continuation after the first
-    const conts = grid.slots.filter((s) => s.continuation);
-    expect(conts.length).toBeGreaterThanOrEqual(3);
+    // D4 (4 slots) + E2 (2 slots) + F2 (2 slots) = 8 slots total
+    const sounded = grid.slots.filter((s) => s.sounded);
+    expect(sounded.length).toBe(3); // 3 melody notes
   });
 });

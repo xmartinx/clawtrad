@@ -1,158 +1,162 @@
-/** Tab document builder for ClawTrad v0.2.
+/** Tab document builder for ClawTrad v0.2.8.
  *
- *  Converts a ParsedAbcTune + TabArrangement into a TabDocument
- *  that preserves rhythmic structure (notes, rests, barlines).
+ *  Walks arrangement columns and rhythm events in lockstep.
+ *  Rests from the parser become rest TabEvents.  Drone columns
+ *  from clawhammer fill are correctly emitted.  Unplayable notes
+ *  are tracked.
  */
 
 import type { ParsedAbcTune } from '../abc/types';
-import type { TabArrangement, TabColumn } from '../banjo/tabTypes';
+import type { TabArrangement } from '../banjo/tabTypes';
 import type { TabDocument, TabMeasure, TabEvent, TabDiagnostics } from './tabLayoutTypes';
 import { TUNINGS } from '../banjo/tunings';
 
-/**
- * Build a TabDocument from parsed ABC and the computed arrangement.
- *
- * The arrangement provides the (string, fret) positions for each note.
- * The parser's rhythm events provide the rhythmic skeleton (notes, rests,
- * barlines).  These are interleaved so rests and barlines appear at the
- * correct positions in the output.
- */
 export function buildTabDocument(
   tune: ParsedAbcTune,
   arrangement: TabArrangement,
 ): TabDocument {
-  // ── map note rhythm events to arrangement columns ──────────
-  const noteEvents = tune.rhythmEvents.filter((e) => e.kind === 'note');
-  const noteColumns = arrangement.columns.filter((c) => !c.isRest);
-
-  // Build a lookup from note-event index to arrangement column
-  const noteToColumn = new Map<number, TabColumn>();
-  for (let i = 0; i < Math.min(noteEvents.length, noteColumns.length); i++) {
-    noteToColumn.set(i, noteColumns[i]);
+  // ── pre-compute measure slot boundaries ────────────────────
+  const measureSlots: number[] = [];
+  let cur = 0;
+  for (const evt of tune.rhythmEvents) {
+    if (evt.kind === 'barline') { if (cur > 0) { measureSlots.push(cur); cur = 0; } }
+    else { cur += Math.round(evt.duration / 0.125); }
   }
+  if (cur > 0) measureSlots.push(cur);
 
-  // ── build measures from rhythm events ──────────────────────
+  // ── chord labels from note rhythm events ───────────────────
+  const chordLabels = tune.rhythmEvents
+    .filter((e) => e.kind === 'note' && e.chordLabel)
+    .map((e) => e.chordLabel!);
+
+  // ── walk columns and rhythm events in lockstep ─────────────
   const measures: TabMeasure[] = [];
   let currentMeasure: TabEvent[] = [];
-  let measureIndex = 0;
-  let beatPosition = 0;        // cumulative within measure
-  let noteIndex = 0;
+  let mi = 0;
+  let bp = 0;
+  let slotsInMeasure = 0;
+  let slotTarget = measureSlots.length > 0 ? measureSlots[0] : Infinity;
+  let colIdx = 0;
+  let reIdx = 0;               // index into non-barline rhythm events
+  let melodyIdx = 0;
   let restCount = 0;
   let noteCount = 0;
   let unplayableCount = 0;
-  const measureBeatPositions: number[] = []; // beat position at start of each measure
+  const cols = arrangement.columns;
 
-  for (const evt of tune.rhythmEvents) {
-    if (evt.kind === 'barline') {
-      // Finish current measure
-      measures.push({
-        index: measureIndex,
-        events: currentMeasure,
-      });
-      measureIndex++;
-      currentMeasure = [];
-      beatPosition = 0;
-      measureBeatPositions.push(beatPosition);
+  while (colIdx < cols.length || reIdx < tune.rhythmEvents.length) {
+    // Check barline in rhythm events
+    if (reIdx < tune.rhythmEvents.length && tune.rhythmEvents[reIdx].kind === 'barline') {
+      reIdx++;
+      // Finish measure if we have content at a barline boundary
+      if (currentMeasure.length > 0 && slotsInMeasure >= slotTarget) {
+        measures.push({ index: mi, events: currentMeasure });
+        mi++; currentMeasure = []; bp = 0; slotsInMeasure = 0;
+        slotTarget = mi < measureSlots.length ? measureSlots[mi] : Infinity;
+      }
       continue;
     }
 
-    if (evt.kind === 'rest') {
+    // Rhythm rest — emit rest event
+    if (reIdx < tune.rhythmEvents.length && tune.rhythmEvents[reIdx].kind === 'rest') {
+      const revt = tune.rhythmEvents[reIdx];
       currentMeasure.push({
-        kind: 'rest',
-        duration: evt.duration,
-        beatPosition,
-        label: 'z',
+        kind: 'rest', duration: revt.duration, beatPosition: bp, label: 'z',
       });
       restCount++;
-      beatPosition += evt.duration;
+      bp += revt.duration;
+      slotsInMeasure += Math.round(revt.duration / 0.125);
+      reIdx++;
       continue;
     }
 
-    if (evt.kind === 'note') {
-      const col = noteToColumn.get(noteIndex);
-      noteIndex++;
+    // Check measure boundary
+    if (currentMeasure.length > 0 && slotTarget > 0 && slotsInMeasure >= slotTarget) {
+      measures.push({ index: mi, events: currentMeasure });
+      mi++; currentMeasure = []; bp = 0; slotsInMeasure = 0;
+      slotTarget = mi < measureSlots.length ? measureSlots[mi] : Infinity;
+      continue;
+    }
 
-      if (!col || col.isRest) {
-        // Note was unplayable — emit a rest, not an "x" marker.
-        // v0.2.5 policy: no x for missed notes in normal tab output.
-        currentMeasure.push({
-          kind: 'rest',
-          duration: evt.duration,
-          beatPosition,
-          label: 'z',
-        });
-        restCount++;
-        unplayableCount++;
-        if (col?.isRest) {
-          currentMeasure[currentMeasure.length - 1].warning =
-            `Note ${evt.raw} unplayable in this tuning`;
+    // Rhythm note — consume from arrangement columns
+    if (reIdx < tune.rhythmEvents.length && tune.rhythmEvents[reIdx].kind === 'note') {
+      const revt = tune.rhythmEvents[reIdx];
+      // In clawhammer mode (drone columns present), a note spans
+      // multiple arrangement columns (melody + drones).  Otherwise,
+      // one column = one note regardless of duration.
+      const hasDrones = cols.some((c) => c.hasDrone);
+      const colsToConsume = hasDrones
+        ? Math.round(revt.duration / 0.125)
+        : 1;
+
+      for (let s = 0; s < colsToConsume && colIdx < cols.length; s++) {
+        const col = cols[colIdx];
+
+        if (col.isRest) {
+          currentMeasure.push({
+            kind: 'rest', duration: 0.125, beatPosition: bp, label: 'z',
+          });
+          restCount++;
+          unplayableCount++;
+          bp += 0.125;
+          slotsInMeasure++;
+          colIdx++;
+          continue;
         }
-        beatPosition += evt.duration;
-        continue;
-      }
 
-      // Find the melody string/fret (not the drone)
-      const played = col.cells.find(
-        (c) => c.fret >= 0 && c.string !== 5,
-      ) ?? col.cells.find((c) => c.fret >= 0);
+        if (col.hasDrone) {
+          currentMeasure.push({
+            kind: 'drone', duration: 0.125, beatPosition: bp,
+            stringIndex: 4, fret: 0,
+          });
+          bp += 0.125;
+          slotsInMeasure++;
+          colIdx++;
+          continue;
+        }
 
-      currentMeasure.push({
-        kind: 'note',
-        duration: evt.duration,
-        beatPosition,
-        stringIndex: played ? played.string - 1 : undefined,
-        fret: played?.fret,
-        sourcePitch: evt.pitch,
-        chordLabel: evt.chordLabel,
-      });
-      noteCount++;
+        // Melody column
+        const played = col.cells.find((c) => c.fret >= 0 && c.string !== 5)
+          ?? col.cells.find((c) => c.fret >= 0);
+        const chord = s === 0 && melodyIdx < chordLabels.length
+          ? chordLabels[melodyIdx] : undefined;
 
-      // If the column also carries a drone, emit a drone
-      // event at the same beat position.
-      if (col.hasDrone) {
         currentMeasure.push({
-          kind: 'drone',
-          duration: evt.duration,
-          beatPosition,
-          stringIndex: 4,   // 5th string
-          fret: 0,
+          kind: 'note', duration: col.duration, beatPosition: bp,
+          stringIndex: played ? played.string - 1 : undefined,
+          fret: played?.fret, chordLabel: chord,
         });
+        noteCount++;
+        if (s === 0) melodyIdx++;
+        bp += col.duration;
+        slotsInMeasure += Math.round(col.duration / 0.125);
+        colIdx++;
       }
 
-      beatPosition += evt.duration;
+      reIdx++;
       continue;
     }
+
+    // No more rhythm events or columns — break
+    break;
   }
 
-  // Final measure (if not ended by a barline)
+  // Final measure
   if (currentMeasure.length > 0) {
-    measures.push({
-      index: measureIndex,
-      events: currentMeasure,
-    });
+    measures.push({ index: mi, events: currentMeasure });
   }
 
-  // ── diagnostics ────────────────────────────────────────────
   const diagnostics: TabDiagnostics = {
-    noteCount,
-    restCount,
-    unplayableCount,
-    measureCount: measures.length,
+    noteCount, restCount, unplayableCount, measureCount: measures.length,
   };
 
-  // Resolve tuning label from notation string
   const tuningMeta = TUNINGS.find((t) => t.notation === arrangement.tuning);
   const tuningLabel = tuningMeta?.name ?? arrangement.tuning;
 
   return {
-    title: tune.title,
-    key: tune.keySignature,
-    meter: tune.meter,
-    tuningId: arrangement.tuning,
-    tuningLabel,
-    mode: arrangement.mode,
-    measures,
-    warnings: arrangement.warnings,
-    diagnostics,
+    title: tune.title, key: tune.keySignature, meter: tune.meter,
+    tuningId: arrangement.tuning, tuningLabel,
+    mode: arrangement.mode, measures,
+    warnings: arrangement.warnings, diagnostics,
   };
 }
