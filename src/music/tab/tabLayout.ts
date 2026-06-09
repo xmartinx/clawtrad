@@ -16,7 +16,8 @@ export const LAYOUT = {
   LEFT_MARGIN: 36,          // px for string labels
   SYSTEM_TOP_MARGIN: 20,    // px gap between systems
   MEASURE_GAP: 10,          // px gap between measures within a system
-  MEASURE_PAD: 6,           // px inner padding before/after barlines within a measure
+  MEASURE_PAD_LEFT: 8,      // px padding after left barline
+  MEASURE_PAD_RIGHT: 12,    // px padding before right barline
   COL_WIDTH: 24,            // px per 1/8-note duration unit
   MIN_EVENT_WIDTH: 12,      // minimum px width for any event
   SYSTEM_HEIGHT: 22 * 4 + 12,  // STRING_SPACING * 4 + bottom pad
@@ -107,7 +108,7 @@ export function computeLayout(
     currentMeasureIndices.push(mi);
 
     // Inner measure padding after left barline
-    currentX += LAYOUT.MEASURE_PAD;
+    currentX += LAYOUT.MEASURE_PAD_LEFT;
 
     // Position events within this measure
     for (const evt of measure.events) {
@@ -117,8 +118,8 @@ export function computeLayout(
       currentX += w;
     }
 
-    // Inner measure padding before right barline
-    currentX += LAYOUT.MEASURE_PAD;
+    // Inner measure padding before right barline (larger for breathing room)
+    currentX += LAYOUT.MEASURE_PAD_RIGHT;
   }
 
   // Finish the final system
@@ -138,7 +139,8 @@ export function computeLayout(
 /* ── Helpers ───────────────────────────────────────────────── */
 
 function computeMeasureWidth(measure: TabMeasure): number {
-  return measure.events.reduce((w, evt) => w + eventWidth(evt), 0) + LAYOUT.MEASURE_PAD * 2;
+  return measure.events.reduce((w, evt) => w + eventWidth(evt), 0)
+    + LAYOUT.MEASURE_PAD_LEFT + LAYOUT.MEASURE_PAD_RIGHT;
 }
 
 function eventWidth(evt: TabEvent): number {

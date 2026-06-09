@@ -227,11 +227,13 @@ function renderBeamedPair(
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
-  // Stem starts at note position, ends at beam top edge.
-  // Use beamY() from beamPrimitives for consistency with beam rects.
+  // Stems start at note position, end 2px into the beam rectangle
+  // for guaranteed visual overlap (no gap between stem and beam).
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
-  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM;
+  // Beam centre: tabBottom + STEM_BELOW + MIN_STEM.
+  // Extend 3px past centre to overlap the beam's bottom half.
+  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM + 3;
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
