@@ -11,6 +11,7 @@
 import React from 'react';
 import type { TabDocument } from '../music/tab/tabLayoutTypes';
 import { computeLayout, type SystemLayout, type PositionedEvent } from '../music/tab/tabLayout';
+import { computeBeamPrimitives } from '../music/tab/beamPrimitives';
 import { tuningStringLabels } from '../music/banjo/tunings';
 import { TUNINGS } from '../music/banjo/tunings';
 
@@ -156,6 +157,10 @@ function renderSystemEvents(
   const events = sys.events;
   if (events.length === 0) return elements;
 
+  // Use the beam primitives calculator for reliable beam data
+  const beamPrims = computeBeamPrimitives(events, y, LEFT_MARGIN);
+  const beamedBeats = new Set(beamPrims.map((b) => b.beatIndex));
+
   // Determine beats from max beatPosition
   const maxBp = Math.max(...events.map((e) => e.beatPosition ?? 0));
   const beats = Math.max(1, Math.ceil(maxBp / 0.25));
@@ -169,11 +174,7 @@ function renderSystemEvents(
   for (let beat = 0; beat < beats; beat++) {
     const group = beatGroups[beat];
 
-    if (
-      group.length === 2 &&
-      isShortNote(group[0]) && isShortNote(group[1]) &&
-      !(group[0].kind === 'drone' && group[1].kind === 'drone')
-    ) {
+    if (beamedBeats.has(beat) && group.length === 2) {
       elements.push(...renderBeamedPair(
         group[0], group[1], systemIndex, elements.length, y, tabBottom,
       ));
@@ -185,16 +186,25 @@ function renderSystemEvents(
     }
   }
 
-  return elements;
-}
+  // Also render beam primitives directly as a safety net
+  for (const bp of beamPrims) {
+    elements.push(
+      <rect
+        key={`beam-${systemIndex}-${bp.beatIndex}`}
+        data-testid="tab-beam"
+        className="tab-beam"
+        x={bp.x}
+        y={bp.y}
+        width={bp.width}
+        height={bp.height}
+        fill="#888888"
+        stroke="none"
+        opacity={0.85}
+      />,
+    );
+  }
 
-function isShortNote(evt: PositionedEvent): boolean {
-  return (
-    (evt.kind === 'note' || evt.kind === 'drone') &&
-    evt.duration !== undefined &&
-    evt.duration > 0 &&
-    evt.duration <= 0.25
-  );
+  return elements;
 }
 
 /* ── Beamed pair ───────────────────────────────────────────── */
@@ -213,29 +223,18 @@ function renderBeamedPair(
   const bStemY = stemYForEvent(b, y);
   const beamY = tabBottom + STEM_BELOW + MIN_STEM;
 
-  // Use explicit fill for guaranteed visibility on any theme.
-  // var(--text-h) resolves to near-white on dark, near-black on light.
-  const beamColor = 'var(--text-h, #888)';
-  const stemColor = 'var(--text-h, #888)';
+  const stemStroke = '#888888';
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
+      {/* Stem lines: note position down to beam area */}
       <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
-        stroke={stemColor} strokeWidth={BEAM_THICKNESS} />
+        stroke={stemStroke} strokeWidth={2} />
       <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
-        stroke={stemColor} strokeWidth={BEAM_THICKNESS} />
-      <rect
-        data-testid="tab-beam"
-        className="tab-beam"
-        x={Math.min(ax, bx) - 2}
-        y={beamY - 4}
-        width={Math.abs(bx - ax) + 4}
-        height={6}
-        fill={beamColor}
-        stroke="none"
-      />
+        stroke={stemStroke} strokeWidth={2} />
+      {/* Beam rect is rendered separately from beamPrimitives */}
     </g>,
   ];
 }
@@ -308,8 +307,9 @@ function renderEventMarker(
     }
     case 'drone':
       return (
-        <text key={key} x={cx} y={y + 4 * STRING_SPACING + 5} fontSize={10}
-          fill="var(--text-muted, #888)" textAnchor="middle">0</text>
+        <text key={key} x={cx} y={y + 4 * STRING_SPACING + 5}
+          fontSize={13} fontWeight="bold" fill="currentColor"
+          textAnchor="middle">0</text>
       );
     case 'rest':
       return (
