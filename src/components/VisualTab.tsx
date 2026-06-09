@@ -54,6 +54,11 @@ export const VisualTab: React.FC<VisualTabProps> = ({ document: doc }) => {
   return (
     <div className="visual-tab">
       <svg
+        data-testid="visual-tab-svg"
+        data-tab-event-count={layout.systems.reduce((n, s) => n + s.events.length, 0)}
+        data-tab-beam-count={layout.systems.reduce((n, s) => n + computeBeamPrimitives(s.events, 0).length, 0)}
+        data-tab-mode={doc.mode}
+        data-tab-meter={doc.meter}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{ width: '100%', maxWidth: svgWidth, fontFamily: 'monospace' }}
       >
@@ -199,7 +204,7 @@ function renderSystemEvents(
             y={bp.y}
             width={bp.width}
             height={bp.height}
-            fill="#cccccc"
+            fill="currentColor"
             stroke="none"
           />
         ))}
@@ -226,17 +231,15 @@ function renderBeamedPair(
   const bStemY = stemYForEvent(b, y);
   const beamY = tabBottom + STEM_BELOW + MIN_STEM;
 
-  const stemStroke = '#888888';
-
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Stem lines: note position down to beam area */}
+      {/* Stems: match barlines — use currentColor */}
       <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
-        stroke={stemStroke} strokeWidth={2} />
+        stroke="currentColor" strokeWidth={2} />
       <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
-        stroke={stemStroke} strokeWidth={2} />
+        stroke="currentColor" strokeWidth={2} />
       {/* Beam rect is rendered separately from beamPrimitives */}
     </g>,
   ];
