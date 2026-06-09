@@ -186,21 +186,24 @@ function renderSystemEvents(
     }
   }
 
-  // Also render beam primitives directly as a safety net
-  for (const bp of beamPrims) {
+  // Render beams in a dedicated group, AFTER all markers and stems
+  if (beamPrims.length > 0) {
     elements.push(
-      <rect
-        key={`beam-${systemIndex}-${bp.beatIndex}`}
-        data-testid="tab-beam"
-        className="tab-beam"
-        x={bp.x}
-        y={bp.y}
-        width={bp.width}
-        height={bp.height}
-        fill="#888888"
-        stroke="none"
-        opacity={0.85}
-      />,
+      <g key={`beams-${systemIndex}`} className="tab-beams" data-testid="tab-beams">
+        {beamPrims.map((bp) => (
+          <rect
+            key={`beam-${systemIndex}-${bp.beatIndex}`}
+            data-testid="tab-beam"
+            className="tab-beam"
+            x={bp.x}
+            y={bp.y}
+            width={bp.width}
+            height={bp.height}
+            fill="#cccccc"
+            stroke="none"
+          />
+        ))}
+      </g>,
     );
   }
 

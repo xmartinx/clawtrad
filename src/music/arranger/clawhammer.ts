@@ -56,7 +56,8 @@ export function addBasicClawhammerDrones(
   }
 
   arrangement.warnings.push(
-    'Basic clawhammer mode: 5th-string drones added in empty offbeat slots. ' +
+    'In Basic Clawhammer mode, open 5th-string drones are added on ' +
+    'offbeat thumb positions where space allows. ' +
     'This is a first-pass arrangement, not a definitive clawhammer tab.',
   );
 

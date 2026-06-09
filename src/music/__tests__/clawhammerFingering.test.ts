@@ -220,8 +220,8 @@ describe('beat-pair beaming via rhythm grid', () => {
     expect(arrangement.columns.length).toBe(8);
   });
 
-  it('beat 0 and beat 2 drones are on strong beats', () => {
-    // The old code added drones only on beats 0 and 2 — verify new behavior
+  it('all offbeat slots get drones in clawhammer fill', () => {
+    // Quarter notes fill all 4 offbeat slots with drones
     const parsed = parseAbc(`X:1\nT:Test\nM:4/4\nL:1/8\nK:D\nD2 E2 F2 G2 |`);
     const arrangement = arrangeMelody(parsed, openG, 'basic-clawhammer');
 

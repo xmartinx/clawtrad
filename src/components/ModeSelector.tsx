@@ -26,7 +26,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
       <p className="help-text">
         {selected === 'melody-only'
           ? 'Plain melody mapped to tab with no drone notes.'
-          : 'Melody with simple 5th-string drone on strong beats (first-pass arrangement).'}
+          : 'Melody with open 5th-string drones on offbeat thumb positions where space allows.'}
       </p>
     </div>
   );
