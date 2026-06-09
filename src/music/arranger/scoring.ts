@@ -43,9 +43,10 @@ export function intrinsicScore(pos: FretPosition): number {
   // Prefer lower frets
   score += (10 - pos.fret) * WEIGHTS.lowFret;
 
-  // Strong bonus for open strings
+  // Strong bonus for open strings — but reduced for string 1
+  // (open 1st string is not idiomatic for second-slot melody in clawhammer pairs)
   if (pos.fret === 0) {
-    score += WEIGHTS.openString;
+    score += pos.string === 1 ? 2 : WEIGHTS.openString;
   }
 
   // Weak bonus for middle strings (2–4)
@@ -53,9 +54,9 @@ export function intrinsicScore(pos: FretPosition): number {
     score += WEIGHTS.middleString;
   }
 
-  // Mild penalty for string 1
+  // Penalty for string 1 — stronger when open (awkward for clawhammer pair mechanics)
   if (pos.string === 1) {
-    score += WEIGHTS.string1Penalty;
+    score += pos.fret === 0 ? -6 : WEIGHTS.string1Penalty;
   }
 
   return score;

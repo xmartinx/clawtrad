@@ -153,19 +153,37 @@ describe('same-string pair fingering preference', () => {
     expect(notes[1].stringIndex).toBeDefined();
   });
 
-  it('sameStringClose bonus beats open-string when open creates awkward mechanics', () => {
-    // c=61 (string 2 fret 2), d=62 (string 2 fret 3 or string 1 fret 0)
-    // Verify intrinsic scores: string 2 close should beat string 1 open
-    const s2f3 = { string: 2, fret: 3, pitch: 62 };
-    const s1f0 = { string: 1, fret: 0, pitch: 62 };
+  it('full quaver bar D E F# G A B c d in K:G keeps c d same-string', () => {
+    // Full 8-note bar in key G (c natural, F# sharp)
+    const parsed = parseAbc(`X:1\nT:Full Bar\nM:4/4\nL:1/8\nK:G\nD E F G A B c d |`);
+    const arr = arrangeMelody(parsed, openG, 'melody-only');
+    const doc = buildTabDocument(parsed, arr);
 
-    const s2f3Score = intrinsicScore(s2f3);
-    const s1f0Score = intrinsicScore(s1f0);
+    const notes = doc.measures[0].events.filter((e) => e.kind === 'note');
+    expect(notes.length).toBe(8);
 
-    // s1f0 (open) has high intrinsic — but pair scoring should prefer s2f2→s2f3
-    expect(s1f0Score).toBeGreaterThan(s2f3Score); // open string wins intrinsically
-    // But transition from s2f2→s2f3 with sameStringClose bonus should win overall
-    // This is verified by the DP in the actual arrangement (tested above)
+    // The last pair c d (indices 6 and 7) must NOT have d on open string 1
+    const cNote = notes[6];
+    const dNote = notes[7];
+    expect(cNote.stringIndex).toBeDefined();
+    expect(dNote.stringIndex).toBeDefined();
+
+    // d must not be open string 1
+    const dIsOpenString1 = dNote.stringIndex === 0 && dNote.fret === 0;
+    expect(dIsOpenString1).toBe(false);
+  });
+
+  it('open string 1 intrinsic score reduced for pair-context (v0.2.10)', () => {
+    // Verify that open string 1 gets less bonus than other open strings
+    const s1f0 = { string: 1, fret: 0, pitch: 62 };  // open D on string 1
+    const s4f0 = { string: 4, fret: 0, pitch: 50 };  // open D on string 4
+
+    const s1Score = intrinsicScore(s1f0);
+    const s4Score = intrinsicScore(s4f0);
+
+    // String 4 open should score higher than string 1 open
+    // (previously they were equal; now string 1 open gets reduced)
+    expect(s4Score).toBeGreaterThan(s1Score);
   });
 });
 

@@ -206,23 +206,31 @@ function renderBeamedPair(
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
-  // Stem y1 reaches from the note's string position, not from below the tab
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
   const beamY = tabBottom + STEM_BELOW + MIN_STEM;
+
+  // Use explicit fill/stroke for guaranteed visibility on any theme
+  const beamColor = 'currentColor';
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Stems: from note position down to beam */}
+      {/* Stems: note position down to beam */}
       <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
-        stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
+        stroke={beamColor} strokeWidth={BEAM_THICKNESS} />
       <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
-        stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
-      {/* Beam connecting stems */}
-      <line x1={ax} y1={beamY} x2={bx} y2={beamY}
-        stroke="currentColor" strokeWidth={BEAM_THICKNESS} />
+        stroke={beamColor} strokeWidth={BEAM_THICKNESS} />
+      {/* Beam: filled rectangle for guaranteed visibility */}
+      <rect
+        x={Math.min(ax, bx) - 2}
+        y={beamY - BEAM_THICKNESS}
+        width={Math.abs(bx - ax) + 4}
+        height={BEAM_THICKNESS * 2}
+        fill={beamColor}
+        stroke="none"
+      />
     </g>,
   ];
 }
