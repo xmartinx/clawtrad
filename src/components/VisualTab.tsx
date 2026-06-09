@@ -197,7 +197,7 @@ function renderSystemEvents(
       <g key={`beams-${systemIndex}`} className="tab-beams" data-testid="tab-beams">
         {beamPrims.map((bp) => (
           <rect
-            key={`beam-${systemIndex}-${bp.beatIndex}`}
+            key={`beam-${systemIndex}-${bp.measureIndex}-${bp.beatIndex}`}
             data-testid="tab-beam"
             className="tab-beam"
             x={bp.x}
