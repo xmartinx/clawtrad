@@ -227,20 +227,20 @@ function renderBeamedPair(
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
+  // Stem starts at note position, ends at beam top edge.
+  // Use beamY() from beamPrimitives for consistency with beam rects.
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
-  const beamY = tabBottom + STEM_BELOW + MIN_STEM;
+  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM;
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Stems: match barlines — use currentColor */}
-      <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
+      <line x1={ax} y1={aStemY} x2={ax} y2={stemEndY}
         stroke="currentColor" strokeWidth={2} />
-      <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
+      <line x1={bx} y1={bStemY} x2={bx} y2={stemEndY}
         stroke="currentColor" strokeWidth={2} />
-      {/* Beam rect is rendered separately from beamPrimitives */}
     </g>,
   ];
 }
