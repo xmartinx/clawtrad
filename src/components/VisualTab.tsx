@@ -154,18 +154,21 @@ function renderSystemEvents(
 ): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
   const events = sys.events;
+  if (events.length === 0) return elements;
 
-  // Group events by beat (0, 1, 2, 3) using beatPosition
-  const beatGroups: PositionedEvent[][] = [[], [], [], []];
+  // Determine beats from max beatPosition
+  const maxBp = Math.max(...events.map((e) => e.beatPosition ?? 0));
+  const beats = Math.max(1, Math.ceil(maxBp / 0.25));
+  const beatGroups: PositionedEvent[][] = Array.from({ length: beats }, () => []);
+
   for (const evt of events) {
-    const beat = Math.min(Math.floor((evt.beatPosition ?? 0) / 0.25), 3);
-    beatGroups[beat].push(evt);
+    const b = Math.min(Math.floor((evt.beatPosition ?? 0) / 0.25), beats - 1);
+    beatGroups[b].push(evt);
   }
 
-  for (let beat = 0; beat < 4; beat++) {
+  for (let beat = 0; beat < beats; beat++) {
     const group = beatGroups[beat];
 
-    // Beam if this beat has exactly 2 short sounded non-drone events
     if (
       group.length === 2 &&
       isShortNote(group[0]) && isShortNote(group[1]) &&
@@ -210,24 +213,26 @@ function renderBeamedPair(
   const bStemY = stemYForEvent(b, y);
   const beamY = tabBottom + STEM_BELOW + MIN_STEM;
 
-  // Use explicit fill/stroke for guaranteed visibility on any theme
-  const beamColor = 'currentColor';
+  // Use explicit fill for guaranteed visibility on any theme.
+  // var(--text-h) resolves to near-white on dark, near-black on light.
+  const beamColor = 'var(--text-h, #888)';
+  const stemColor = 'var(--text-h, #888)';
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Stems: note position down to beam */}
       <line x1={ax} y1={aStemY} x2={ax} y2={beamY}
-        stroke={beamColor} strokeWidth={BEAM_THICKNESS} />
+        stroke={stemColor} strokeWidth={BEAM_THICKNESS} />
       <line x1={bx} y1={bStemY} x2={bx} y2={beamY}
-        stroke={beamColor} strokeWidth={BEAM_THICKNESS} />
-      {/* Beam: filled rectangle for guaranteed visibility */}
+        stroke={stemColor} strokeWidth={BEAM_THICKNESS} />
       <rect
+        data-testid="tab-beam"
+        className="tab-beam"
         x={Math.min(ax, bx) - 2}
-        y={beamY - BEAM_THICKNESS}
+        y={beamY - 4}
         width={Math.abs(bx - ax) + 4}
-        height={BEAM_THICKNESS * 2}
+        height={6}
         fill={beamColor}
         stroke="none"
       />
