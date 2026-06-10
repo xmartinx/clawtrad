@@ -29,9 +29,17 @@ describe('Default ABC (Simple D Reel)', () => {
     expect(svg).not.toBeNull();
     const beamCount = Number(svg!.getAttribute('data-tab-beam-count'));
     expect(beamCount).toBeGreaterThan(0);
-    // Stems should also exist
-    const stems = container.querySelectorAll('[data-testid="tab-stem"]');
-    expect(stems.length).toBeGreaterThan(0);
+    // Stems should also exist and be queryable three ways
+    expect(container.querySelectorAll('[data-testid="tab-stem"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.tab-stem').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-clawtrad-stem="true"]').length).toBeGreaterThan(0);
+    // All three queries must match
+    const byId = container.querySelectorAll('[data-testid="tab-stem"]').length;
+    const byClass = container.querySelectorAll('.tab-stem').length;
+    const byAttr = container.querySelectorAll('[data-clawtrad-stem="true"]').length;
+    expect(byId).toBe(byClass);
+    expect(byId).toBe(byAttr);
+    expect(Number(svg!.getAttribute('data-tab-stem-count'))).toBe(byId);
   });
 });
 

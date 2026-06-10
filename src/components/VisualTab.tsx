@@ -26,7 +26,7 @@ const MIN_STEM = 16;
 const MAX_STEM = 28;
 const CHORD_ABOVE = 18;
 const BEAM_THICKNESS = 1.8;
-const TIME_SIG_FONT = 20;
+const TIME_SIG_FONT = 22;
 const MEASURE_NUM_FONT = 11;
 
 /* ── Main component ───────────────────────────────────────── */
@@ -195,7 +195,6 @@ function renderSystemEvents(
   if (events.length === 0) return elements;
 
   const beamPrims = computeBeamPrimitives(events, y, LEFT_MARGIN);
-  const beamedBeats = new Set(beamPrims.map((b) => b.beatIndex));
 
   // ── Render BEAMS FIRST (behind stems) ──────────────────────
   if (beamPrims.length > 0) {
@@ -218,43 +217,51 @@ function renderSystemEvents(
     );
   }
 
-  // ── Render stems + markers ON TOP of beams ─────────────────
-  const maxBp = Math.max(...events.map((e) => e.beatPosition ?? 0));
-  const beats = Math.max(1, Math.ceil(maxBp / 0.25));
-  const beatGroups: PositionedEvent[][] = Array.from({ length: beats }, () => []);
+  // ── Per-measure event segments (mirrors beamPrimitives.splitMeasures) ─
+  const segments = splitMeasureEvents(events);
 
-  for (const evt of events) {
-    const b = Math.min(Math.floor((evt.beatPosition ?? 0) / 0.25), beats - 1);
-    beatGroups[b].push(evt);
-  }
-
-  const beamByBeat = new Map<number, (typeof beamPrims)[0]>();
+  // Beam primitives indexed by (measureIndex, beatIndex)
+  const beamMap = new Map<string, (typeof beamPrims)[0]>();
   for (const bp of beamPrims) {
-    beamByBeat.set(bp.beatIndex, bp);
+    beamMap.set(`${bp.measureIndex}-${bp.beatIndex}`, bp);
   }
 
   // Collect all stem elements into a dedicated group
   const stemElements: React.ReactNode[] = [];
 
-  for (let beat = 0; beat < beats; beat++) {
-    const group = beatGroups[beat];
+  let segMeasureIndex = 0;
+  for (const seg of segments) {
+    if (seg.length === 0) { segMeasureIndex++; continue; }
+    const mi = segMeasureIndex;
+    const maxBp = Math.max(...seg.map((e) => e.beatPosition ?? 0));
+    const beats = Math.max(1, Math.ceil(maxBp / 0.25));
+    const beatGroups: PositionedEvent[][] = Array.from({ length: beats }, () => []);
 
-    if (beamedBeats.has(beat) && group.length === 2) {
-      const bp = beamByBeat.get(beat);
-      elements.push(
-        <g key={`bp-${systemIndex}-${beat}`}>
-          {renderEventMarker(group[0], LEFT_MARGIN + group[0].x, y, `bp-${systemIndex}-${beat}-a`)}
-          {renderEventMarker(group[1], LEFT_MARGIN + group[1].x, y, `bp-${systemIndex}-${beat}-b`)}
-        </g>,
-      );
-      // Stems go into the dedicated stems group
-      stemElements.push(...renderStemPair(group[0], group[1], systemIndex, beat, y, tabBottom, bp));
-    } else {
-      for (const evt of group) {
-        const cx = LEFT_MARGIN + evt.x;
-        elements.push(renderSingleEvent(evt, elements.length, systemIndex, cx, y, tabBottom));
+    for (const evt of seg) {
+      const b = Math.min(Math.floor((evt.beatPosition ?? 0) / 0.25), beats - 1);
+      beatGroups[b].push(evt);
+    }
+
+    for (let beat = 0; beat < beats; beat++) {
+      const group = beatGroups[beat];
+      const bp = beamMap.get(`${mi}-${beat}`);
+
+      if (bp && group.length === 2) {
+        elements.push(
+          <g key={`bp-${systemIndex}-${mi}-${beat}`}>
+            {renderEventMarker(group[0], LEFT_MARGIN + group[0].x, y, `bp-${systemIndex}-${mi}-${beat}-a`)}
+            {renderEventMarker(group[1], LEFT_MARGIN + group[1].x, y, `bp-${systemIndex}-${mi}-${beat}-b`)}
+          </g>,
+        );
+        stemElements.push(...renderStemPair(group[0], group[1], systemIndex, mi, beat, y, tabBottom, bp));
+      } else {
+        for (const evt of group) {
+          const cx = LEFT_MARGIN + evt.x;
+          elements.push(renderSingleEvent(evt, elements.length, systemIndex, cx, y, tabBottom));
+        }
       }
     }
+    segMeasureIndex++;
   }
 
   // Add stems group AFTER event markers (on top of beams)
@@ -275,6 +282,7 @@ function renderStemPair(
   a: PositionedEvent,
   b: PositionedEvent,
   systemIndex: number,
+  measureIndex: number,
   beatIndex: number,
   y: number,
   tabBottom: number,
@@ -285,31 +293,42 @@ function renderStemPair(
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
   const beamBottom = beamPrim ? beamPrim.y + beamPrim.height : tabBottom + STEM_BELOW + MIN_STEM;
-  const stemEndY = beamBottom + 4;
-  const mi = beamPrim?.measureIndex ?? 0;
+  const stemEndY = beamBottom + 6; // 6px penetration for unmistakable contact
+  const mi = beamPrim?.measureIndex ?? measureIndex;
+  const bi = beatIndex;
 
   return [
     <path
-      key={`stem-${systemIndex}-${mi}-${beatIndex}-0`}
+      key={`stem-${systemIndex}-${mi}-${bi}-0`}
       data-testid="tab-stem"
+      data-clawtrad-stem="true"
       className="tab-stem"
       data-measure-index={mi}
-      data-pair-index={beatIndex}
+      data-pair-index={bi}
+      data-beam-index={bi}
       data-event-index={0}
       data-string-index={a.stringIndex ?? -1}
       data-kind={a.kind}
+      data-y1={aStemY}
+      data-y2={stemEndY}
+      data-beam-bottom={beamBottom}
       d={`M ${ax} ${aStemY} L ${ax} ${stemEndY}`}
       stroke="currentColor" strokeWidth={2} fill="none"
     />,
     <path
-      key={`stem-${systemIndex}-${mi}-${beatIndex}-1`}
+      key={`stem-${systemIndex}-${mi}-${bi}-1`}
       data-testid="tab-stem"
+      data-clawtrad-stem="true"
       className="tab-stem"
       data-measure-index={mi}
-      data-pair-index={beatIndex}
+      data-pair-index={bi}
+      data-beam-index={bi}
       data-event-index={1}
       data-string-index={b.stringIndex ?? -1}
       data-kind={b.kind}
+      data-y1={bStemY}
+      data-y2={stemEndY}
+      data-beam-bottom={beamBottom}
       d={`M ${bx} ${bStemY} L ${bx} ${stemEndY}`}
       stroke="currentColor" strokeWidth={2} fill="none"
     />,
@@ -410,4 +429,19 @@ function renderStemFrom(
     <line x1={cx} y1={yFrom} x2={cx} y2={yEnd}
       stroke="currentColor" strokeWidth={BEAM_THICKNESS - 0.2} />
   );
+}
+
+/** Split positioned events at measure boundaries (beatPosition resets). */
+function splitMeasureEvents(events: PositionedEvent[]): PositionedEvent[][] {
+  const segs: PositionedEvent[][] = [];
+  let cur: PositionedEvent[] = [];
+  let prevBp = -1;
+  for (const evt of events) {
+    const bp = evt.beatPosition ?? 0;
+    if (prevBp >= 0 && bp < prevBp - 0.1) { segs.push(cur); cur = []; }
+    cur.push(evt);
+    prevBp = bp;
+  }
+  if (cur.length > 0) segs.push(cur);
+  return segs.length > 0 ? segs : [events];
 }
