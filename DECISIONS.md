@@ -172,6 +172,20 @@ Durable technical and product decisions. Each entry records what was decided, wh
 
 ---
 
+## 2025-06-10 — v0.2.21: Stems must be browser-queryable SVG primitives
+
+**Decision:** Stems must be actual browser-queryable SVG primitives with `data-testid="tab-stem"`; dataset stem counts alone are not sufficient. Stems are split per-measure (not flat-grouped) and independently queryable via three selectors.
+**Reason:** `data-tab-stem-count` was positive while `querySelectorAll('[data-testid="tab-stem"]')` returned zero. The flat event grouping across measures caused `group.length === 2` to always fail for multi-measure tunes.
+
+---
+
+## 2025-06-10 — v0.2.21: Stem penetration and time signature polish
+
+**Decision:** Stems should visibly pass beyond the beam bottom by 6px. Time signature should be large stacked numbers (22px) centred on 2nd/4th string lines.
+**Reason:** Smaller penetration values (2–4px) were visually unreliable. Time signature needs to be clearly distinguishable from measure numbers.
+
+---
+
 ## 2025-06-08 — v0.2.4: Visual correctness before feature expansion
 
 **Decision:** Prioritise visual tab corrections (string mapping, drone line, beam groups, clean header) over new musical features in v0.2.4.

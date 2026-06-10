@@ -52,7 +52,16 @@
 - [x] ParseDiagnostics with feature detection
 - [x] Manual QA documentation
 
-## v0.2.3 — Banjo Tab Engraving Style Pass ✅ (current)
+## v0.2.21 — Current (parked) ✅
+
+- [x] Per-measure stem grouping (fixes querySelectorAll=0)
+- [x] Stems 3-way queryable (data-testid, class, data-attr)
+- [x] Stem penetration 6px past beam bottom
+- [x] Time signature font 22px, stacked on 2nd/4th string lines
+- [x] Beat-pair beaming, drone fill, measure numbers, final barline
+- [x] 331 tests, 19 files
+
+## v0.2.3 — Banjo Tab Engraving Style Pass ✅
 
 - [x] Measure numbers at start of each system
 - [x] Time signature at first system

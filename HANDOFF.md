@@ -2,11 +2,26 @@
 
 ## Current Status
 
-**v0.2.21 — Actual Browser Stem Elements and Meter Spacing Polish complete.** Stems now per-measure grouped (fixes querySelectorAll=0 bug). Stems 3-way queryable (testid/class/data-attr). Penetration 6px. Time sig 22px. 331 tests pass. Stems in dedicated `<g data-testid="tab-stems">`. Contact extended to beam bottom + 4px. Large stacked time sig on first system. Measure numbers above staff. Final barline. 331 tests pass. Stems rendered as inspectable `<path>` elements with data-testid, className, and geometry attributes. Stems extend from event position through beam to 2px visible tip. 331 tests pass. Beams render FIRST (stems on top). Stems extend 5px past beam centre for visible tips. Beam width exactly spans pair stems. Beam height 3px. Right barline pad 14px. 330 tests pass. Stems extend 3px past beam centre for guaranteed overlap. Beam height reduced to 4px. Asymmetric barline padding (8px left, 12px right). 330 tests pass. Beam height reduced to 5px. Barline inner padding (6px) added. Stem-to-beam geometry uses consistent beamY computation. 330 tests pass. Split-measure beam grouping fixes tabBeamCount=0 bug. All three manual QA ABCs now produce correct beam counts (8/8/4). 330 tests pass. App integration tests prove default ABC produces beams. Beams/stems/barlines now share consistent currentColor styling. Diagnostic data attributes on SVG root. 324 tests pass. DOM render tests prove beams exist in SVG with valid attributes. Beams now #ccc fill in dedicated `<g>`. Basic Clawhammer is default mode. Plain-text tab section removed from UI. "Strong beat" drone wording corrected. 318 tests pass. Beams use hardcoded #888 fill and are rendered from beamPrimitives calculator. Drones use same font size/weight as fret numbers. 311 tests pass. Beams use explicit CSS var fill and data-testid. Rhythm grid is meter-aware (2/4→4 slots, 4/4→8 slots). Beat grouping dynamically adapts to meter. 303 tests pass. Beams now use filled `<rect>` for guaranteed visibility. Open string 1 attraction reduced for pair-context second-slot notes. Full-bar c d pair verified same-string. 286 tests pass. Beams now visible for melody+drone pairs. Same-string close moves (sameStringClose=8) preferred over open-string jumps for second-slot melody notes. 285 tests pass. Slot-grid debug module for exact assertions. buildTabDocument walks columns+rhythm in lockstep — drone columns correctly emitted as events. 274 tests pass (18 new slot-grid tests). Drone fill only in empty offbeat slots. Full quaver bars get zero drones. Beat-pair beaming [0,1][2,3][4,5][6,7]. Conservative drop-thumb (adjacent N+1 only). Same-string H/P/Sl candidates. 256 tests pass. Beat preservation fixed (quarter notes span 2 eighth slots). Double C wired end-to-end (notation as canonical tuning ID). Stems reach from note position down to beam. 232 tests pass. Double C tuning added. Pitch anchoring via per-tuning offset. No x markers in normal output. Tuning letter labels. Rhythm grid and beaming model. Three new spec docs. 213 tests pass. Visual tab now includes measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), and improved layout. 195 tests pass.
+**v0.2.21 — Actual Browser Stem Elements and Meter Spacing Polish.** Project parked for later resumption.
+
+Key features at park:
+- SVG visual tab with 5-line staff, measure numbers, time signature, final barline
+- Beat-pair beaming [0,1][2,3][4,5][6,7] with 3px beams (currentColor)
+- Quarter-note drone fill in clawhammer mode (offbeat slots only)
+- Stems: per-measure grouped, 3-way queryable, 6px beam penetration
+- Double C, Open G, Double D, Sawmill A tunings with pitch anchoring
+- Tuning letter labels, chord labels (display-only)
+- Meter-aware: 4/4 → 8 slots, 2/4 → 4 slots
+- Tolerant ABC parser (comments, missing headers, accidentals)
+- DP arrangement with same-string pair preference
+- Basic Clawhammer default mode, plain-text tab removed from UI
 
 - **Branch:** `master`
-- **Date:** 2025-06-08
-- **Previous commit:** `4205708` — feat: improve abc compatibility and warnings
+- **Commit:** `ec96764`
+- **Date:** 2025-06-10
+- **Tests:** 331 passed (19 files)
+- **Build:** succeeds
+- **Pushed:** yes
 
 ## Commands
 
@@ -162,16 +177,26 @@ Test files:
 6. **Key signature subset** — flat keys beyond F and Bb, and some modal keys, generate a warning
 7. **Seventh-fret ceiling** — notes requiring fret > 7 are skipped; no octave folding
 
-## Next Recommended Task
+## Project Parked
 
-**v0.3 — Jig Support**: extend rhythm and drone logic for 6/8 time, add jig test fixtures, update TabDocument and visual tab for compound meter. See `ROADMAP.md`.
+Full resume instructions: `docs/project_parking_handoff.md`
 
-Alternatively:
-- **Tuning recommendation** — suggest best tuning based on tune key and range
-- **Editable tab** — click to change string/fret assignments
+Quick resume:
+```powershell
+cd D:\Appbuilds\ClawTrad
+npm run dev -- --force
+# Ctrl+Shift+R in browser
+# Run DevTools checks from parking doc
+```
+
+## Next Recommended Task (When Resuming)
+
+1. **Verify v0.2.21 browser QA** — hard refresh, run DevTools stem queries.
+2. If stems queryable: **H/P/Sl label rendering** — render H/P/Sl between paired fret numbers. `assignPairRoles()` in `clawhammer.ts` computes candidates.
+3. If stems still fail: investigate jsdom vs browser render path; clear Vite cache (`rm -r node_modules/.vite`).
 
 ## Last Completed Task
 
-v0.2.3 Banjo Tab Engraving Style Pass: measure numbers, time signature, skipped "x" markers, rhythm stems, chord labels (display-only), 195 tests, style reference doc. Commit pending.
+v0.2.21: Fixed stem queryability bug (per-measure event grouping). Stems 3-way queryable, penetration 6px, time sig 22px. 331 tests. Commit `ec96764`.
 
 
