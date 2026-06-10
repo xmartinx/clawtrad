@@ -1,11 +1,11 @@
-/** Visual SVG tab rendering for ClawTrad v0.2.5.
+/** Visual SVG tab rendering for ClawTrad v0.2.20.
  *
- *  Renders a TabDocument as inline SVG:
- *  - Tuning letter labels at left (not string numbers)
- *  - 5th string (bottom line) drone-only, open "0"
- *  - Beam groups by beat: [1&] [2&] [3&] [4&]
- *  - No x markers in normal output (unplayable→rest)
- *  - Multi-system wrapping with measure numbers, time sig
+ *  Renders a TabDocument as inline SVG with:
+ *  - Browser-queryable stem elements (data-testid="tab-stem")
+ *  - Large stacked time signature on first system
+ *  - Small measure numbers above staff at measure starts
+ *  - Final closing barline
+ *  - Beams, stems, drone markers, chord labels
  */
 
 import React from 'react';
@@ -26,6 +26,8 @@ const MIN_STEM = 16;
 const MAX_STEM = 28;
 const CHORD_ABOVE = 18;
 const BEAM_THICKNESS = 1.8;
+const TIME_SIG_FONT = 20;
+const MEASURE_NUM_FONT = 11;
 
 /* ── Main component ───────────────────────────────────────── */
 
@@ -73,7 +75,7 @@ export const VisualTab: React.FC<VisualTabProps> = ({ document: doc }) => {
 
         {layout.systems.map((sys, si) => {
           const sysY = HEADER_HEIGHT + si * systemTotalHeight;
-          return renderSystem(sys, si, labels, sysY, svgWidth, layout);
+          return renderSystem(sys, si, labels, sysY, svgWidth, layout, si === layout.systems.length - 1);
         })}
       </svg>
 
@@ -95,28 +97,47 @@ function renderSystem(
   y: number,
   svgWidth: number,
   layout: SystemLayout,
+  isLastSystem: boolean,
 ): React.ReactNode {
   const rightEdge = svgWidth - 8;
   const tabBottom = y + STRING_SPACING * 4;
+  const [meterTop, meterBot] = layout.timeSignature.split('/');
+  const isFirst = systemIndex === 0;
 
   return (
     <g key={`sys-${systemIndex}`}>
-      {/* Measure number — small, at first measure only */}
-      <text x={LEFT_MARGIN - 18} y={y + 2 * STRING_SPACING + 5}
-        fontSize={11} fill="var(--text-muted, #888)" textAnchor="end">
+      {/* Measure number — small, above staff at measure start */}
+      <text
+        data-testid="tab-measure-number"
+        x={LEFT_MARGIN + 2}
+        y={y - 8}
+        fontSize={MEASURE_NUM_FONT}
+        fill="var(--text-muted, #888)"
+        textAnchor="start"
+      >
         {sys.startMeasureNumber}
       </text>
 
-      {/* Time signature — first system only */}
-      {systemIndex === 0 && (
-        <g>
-          <text x={LEFT_MARGIN - 8} y={y + STRING_SPACING + 4}
-            fontSize={14} fontWeight="bold" fill="currentColor" textAnchor="end">
-            {layout.timeSignature.split('/')[0]}
+      {/* Time signature — first system, large stacked on staff lines */}
+      {isFirst && (
+        <g data-testid="tab-time-signature" data-meter={layout.timeSignature}>
+          <text
+            data-testid="tab-time-signature-top"
+            x={LEFT_MARGIN + 2}
+            y={y + STRING_SPACING + 5}
+            fontSize={TIME_SIG_FONT} fontWeight="bold" fill="currentColor"
+            textAnchor="start"
+          >
+            {meterTop}
           </text>
-          <text x={LEFT_MARGIN - 8} y={y + 2 * STRING_SPACING + 4}
-            fontSize={14} fontWeight="bold" fill="currentColor" textAnchor="end">
-            {layout.timeSignature.split('/')[1]}
+          <text
+            data-testid="tab-time-signature-bottom"
+            x={LEFT_MARGIN + 2}
+            y={y + 3 * STRING_SPACING + 5}
+            fontSize={TIME_SIG_FONT} fontWeight="bold" fill="currentColor"
+            textAnchor="start"
+          >
+            {meterBot}
           </text>
         </g>
       )}
@@ -138,7 +159,7 @@ function renderSystem(
           stroke="currentColor" strokeWidth={0.6} opacity={0.45} />
       ))}
 
-      {/* Barlines */}
+      {/* Internal barlines */}
       {sys.barlines.map((bx, bi) => (
         <line key={`bar-${systemIndex}-${bi}`}
           x1={LEFT_MARGIN + bx} y1={y} x2={LEFT_MARGIN + bx} y2={tabBottom}
@@ -147,6 +168,16 @@ function renderSystem(
 
       {/* Events with beaming */}
       {renderSystemEvents(sys, systemIndex, y, tabBottom)}
+
+      {/* Final barline: always render at the end of the last system */}
+      {isLastSystem && (
+        <line
+          data-testid="tab-final-barline" data-final-barline="true"
+          x1={LEFT_MARGIN + sys.contentWidth + 6} y1={y}
+          x2={LEFT_MARGIN + sys.contentWidth + 6} y2={tabBottom}
+          stroke="currentColor" strokeWidth={1.5}
+        />
+      )}
     </g>
   );
 }
@@ -197,20 +228,27 @@ function renderSystemEvents(
     beatGroups[b].push(evt);
   }
 
-  // Find the beam primitive for each beat to derive stem endpoints
   const beamByBeat = new Map<number, (typeof beamPrims)[0]>();
   for (const bp of beamPrims) {
     beamByBeat.set(bp.beatIndex, bp);
   }
+
+  // Collect all stem elements into a dedicated group
+  const stemElements: React.ReactNode[] = [];
 
   for (let beat = 0; beat < beats; beat++) {
     const group = beatGroups[beat];
 
     if (beamedBeats.has(beat) && group.length === 2) {
       const bp = beamByBeat.get(beat);
-      elements.push(...renderBeamedPair(
-        group[0], group[1], systemIndex, elements.length, y, tabBottom, bp,
-      ));
+      elements.push(
+        <g key={`bp-${systemIndex}-${beat}`}>
+          {renderEventMarker(group[0], LEFT_MARGIN + group[0].x, y, `bp-${systemIndex}-${beat}-a`)}
+          {renderEventMarker(group[1], LEFT_MARGIN + group[1].x, y, `bp-${systemIndex}-${beat}-b`)}
+        </g>,
+      );
+      // Stems go into the dedicated stems group
+      stemElements.push(...renderStemPair(group[0], group[1], systemIndex, beat, y, tabBottom, bp));
     } else {
       for (const evt of group) {
         const cx = LEFT_MARGIN + evt.x;
@@ -219,16 +257,25 @@ function renderSystemEvents(
     }
   }
 
+  // Add stems group AFTER event markers (on top of beams)
+  if (stemElements.length > 0) {
+    elements.push(
+      <g key={`stems-${systemIndex}`} className="tab-stems" data-testid="tab-stems">
+        {stemElements}
+      </g>,
+    );
+  }
+
   return elements;
 }
 
-/* ── Beamed pair ───────────────────────────────────────────── */
+/* ── Beamed pair stems (separate from event markers) ────────── */
 
-function renderBeamedPair(
+function renderStemPair(
   a: PositionedEvent,
   b: PositionedEvent,
   systemIndex: number,
-  startIdx: number,
+  beatIndex: number,
   y: number,
   tabBottom: number,
   beamPrim?: { x: number; y: number; width: number; height: number; measureIndex: number },
@@ -237,42 +284,35 @@ function renderBeamedPair(
   const bx = LEFT_MARGIN + b.x;
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
-
-  // Derive stem endpoint from actual beam geometry: bottom of beam + 2px visible tip.
   const beamBottom = beamPrim ? beamPrim.y + beamPrim.height : tabBottom + STEM_BELOW + MIN_STEM;
-  const stemEndY = beamBottom + 2;
-
+  const stemEndY = beamBottom + 4;
   const mi = beamPrim?.measureIndex ?? 0;
-  const bi = beamPrim ? Math.floor((a.beatPosition ?? 0) / 0.25) : 0;
 
   return [
-    <g key={`bp-${systemIndex}-${startIdx}`}>
-      {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
-      {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      {/* Explicit, inspectable stem primitives — use <path> for reliable SVG namespace */}
-      <path
-        data-testid="tab-stem"
-        className="tab-stem"
-        data-measure-index={mi}
-        data-pair-index={bi}
-        data-event-index={0}
-        data-string-index={a.stringIndex ?? -1}
-        data-kind={a.kind}
-        d={`M ${ax} ${aStemY} L ${ax} ${stemEndY}`}
-        stroke="currentColor" strokeWidth={2} fill="none"
-      />
-      <path
-        data-testid="tab-stem"
-        className="tab-stem"
-        data-measure-index={mi}
-        data-pair-index={bi}
-        data-event-index={1}
-        data-string-index={b.stringIndex ?? -1}
-        data-kind={b.kind}
-        d={`M ${bx} ${bStemY} L ${bx} ${stemEndY}`}
-        stroke="currentColor" strokeWidth={2} fill="none"
-      />
-    </g>,
+    <path
+      key={`stem-${systemIndex}-${mi}-${beatIndex}-0`}
+      data-testid="tab-stem"
+      className="tab-stem"
+      data-measure-index={mi}
+      data-pair-index={beatIndex}
+      data-event-index={0}
+      data-string-index={a.stringIndex ?? -1}
+      data-kind={a.kind}
+      d={`M ${ax} ${aStemY} L ${ax} ${stemEndY}`}
+      stroke="currentColor" strokeWidth={2} fill="none"
+    />,
+    <path
+      key={`stem-${systemIndex}-${mi}-${beatIndex}-1`}
+      data-testid="tab-stem"
+      className="tab-stem"
+      data-measure-index={mi}
+      data-pair-index={beatIndex}
+      data-event-index={1}
+      data-string-index={b.stringIndex ?? -1}
+      data-kind={b.kind}
+      d={`M ${bx} ${bStemY} L ${bx} ${stemEndY}`}
+      stroke="currentColor" strokeWidth={2} fill="none"
+    />,
   ];
 }
 
