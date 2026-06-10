@@ -10,8 +10,12 @@ import { App } from '../App';
 function setAbcAndGenerate(container: HTMLElement, abc: string) {
   const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
   expect(textarea).not.toBeNull();
-  // Set value directly + fire input event for React controlled component
-  fireEvent.input(textarea, { target: { value: abc } });
+  // Set native DOM value FIRST, then fire input for React
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLTextAreaElement.prototype, 'value',
+  )?.set;
+  nativeInputValueSetter?.call(textarea, abc);
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
   fireEvent.click(screen.getByText('Generate Tab'));
 }
 
@@ -25,6 +29,9 @@ describe('Default ABC (Simple D Reel)', () => {
     expect(svg).not.toBeNull();
     const beamCount = Number(svg!.getAttribute('data-tab-beam-count'));
     expect(beamCount).toBeGreaterThan(0);
+    // Stems should also exist
+    const stems = container.querySelectorAll('[data-testid="tab-stem"]');
+    expect(stems.length).toBeGreaterThan(0);
   });
 });
 
@@ -63,6 +70,14 @@ D2 E2 F2 G2 | A2 B2 c2 d2 |`;
       expect(parseFloat(b.getAttribute('x') || '-1')).toBeGreaterThanOrEqual(0);
       expect(parseFloat(b.getAttribute('y') || '-1')).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('SVG root has data-tab-stem-count', () => {
+    const { container } = render(React.createElement(App));
+    setAbcAndGenerate(container, ABC);
+    const svg = container.querySelector('[data-testid="visual-tab-svg"]');
+    const stemCount = Number(svg!.getAttribute('data-tab-stem-count'));
+    expect(stemCount).toBeGreaterThan(0);
   });
 
   it('Basic Clawhammer is default mode', () => {

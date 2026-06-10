@@ -58,6 +58,7 @@ export const VisualTab: React.FC<VisualTabProps> = ({ document: doc }) => {
         data-tab-event-count={layout.systems.reduce((n, s) => n + s.events.length, 0)}
         data-tab-beam-count={layout.systems.reduce((n, s) => n + computeBeamPrimitives(s.events, 0).length, 0)}
         data-tab-mode={doc.mode}
+        data-tab-stem-count={layout.systems.reduce((n, s) => n + computeBeamPrimitives(s.events, 0).length * 2, 0)}
         data-tab-meter={doc.meter}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{ width: '100%', maxWidth: svgWidth, fontFamily: 'monospace' }}
@@ -196,12 +197,19 @@ function renderSystemEvents(
     beatGroups[b].push(evt);
   }
 
+  // Find the beam primitive for each beat to derive stem endpoints
+  const beamByBeat = new Map<number, (typeof beamPrims)[0]>();
+  for (const bp of beamPrims) {
+    beamByBeat.set(bp.beatIndex, bp);
+  }
+
   for (let beat = 0; beat < beats; beat++) {
     const group = beatGroups[beat];
 
     if (beamedBeats.has(beat) && group.length === 2) {
+      const bp = beamByBeat.get(beat);
       elements.push(...renderBeamedPair(
-        group[0], group[1], systemIndex, elements.length, y, tabBottom,
+        group[0], group[1], systemIndex, elements.length, y, tabBottom, bp,
       ));
     } else {
       for (const evt of group) {
@@ -223,24 +231,47 @@ function renderBeamedPair(
   startIdx: number,
   y: number,
   tabBottom: number,
+  beamPrim?: { x: number; y: number; width: number; height: number; measureIndex: number },
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
-  // Stems start at note position, extend through beam to a visible tip.
-  // Beams are rendered behind stems (z-order), so stem endpoints show.
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
-  // Beam centre + 5px: extends through the 3px beam to 2px visible tip below.
-  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM + 5;
+
+  // Derive stem endpoint from actual beam geometry: bottom of beam + 2px visible tip.
+  const beamBottom = beamPrim ? beamPrim.y + beamPrim.height : tabBottom + STEM_BELOW + MIN_STEM;
+  const stemEndY = beamBottom + 2;
+
+  const mi = beamPrim?.measureIndex ?? 0;
+  const bi = beamPrim ? Math.floor((a.beatPosition ?? 0) / 0.25) : 0;
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>
       {renderEventMarker(a, ax, y, `${systemIndex}-${startIdx}-a`)}
       {renderEventMarker(b, bx, y, `${systemIndex}-${startIdx}-b`)}
-      <line x1={ax} y1={aStemY} x2={ax} y2={stemEndY}
-        stroke="currentColor" strokeWidth={2} />
-      <line x1={bx} y1={bStemY} x2={bx} y2={stemEndY}
-        stroke="currentColor" strokeWidth={2} />
+      {/* Explicit, inspectable stem primitives — use <path> for reliable SVG namespace */}
+      <path
+        data-testid="tab-stem"
+        className="tab-stem"
+        data-measure-index={mi}
+        data-pair-index={bi}
+        data-event-index={0}
+        data-string-index={a.stringIndex ?? -1}
+        data-kind={a.kind}
+        d={`M ${ax} ${aStemY} L ${ax} ${stemEndY}`}
+        stroke="currentColor" strokeWidth={2} fill="none"
+      />
+      <path
+        data-testid="tab-stem"
+        className="tab-stem"
+        data-measure-index={mi}
+        data-pair-index={bi}
+        data-event-index={1}
+        data-string-index={b.stringIndex ?? -1}
+        data-kind={b.kind}
+        d={`M ${bx} ${bStemY} L ${bx} ${stemEndY}`}
+        stroke="currentColor" strokeWidth={2} fill="none"
+      />
     </g>,
   ];
 }
