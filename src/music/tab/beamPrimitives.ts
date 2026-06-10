@@ -46,7 +46,7 @@ export function computeBeamPrimitives(
   const segments = splitMeasures(events);
   const beams: BeamPrimitive[] = [];
   const beamYPos = beamY(tabTop);
-  const beamH = 4;
+  const beamH = 3;
 
   for (let mi = 0; mi < segments.length; mi++) {
     const seg = segments[mi];
@@ -84,9 +84,9 @@ export function computeBeamPrimitives(
             measureIndex: mi,
             systemIndex: 0,
             beatIndex: beat,
-            x: x - 2,
+            x,
             y: beamYPos - beamH / 2,
-            width: w + 4,
+            width: w,
             height: beamH,
           });
         }

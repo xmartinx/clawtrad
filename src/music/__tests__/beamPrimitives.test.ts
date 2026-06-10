@@ -25,12 +25,12 @@ describe('beam primitives for quarter drone fill', () => {
     expect(beams.length).toBe(4);
   });
 
-  it('every beam has width > 0 and height >= 4', () => {
+  it('every beam has width > 0 and height >= 3', () => {
     const sys = layout.systems[0];
     const beams = computeBeamPrimitives(sys.events, 0);
     for (const b of beams) {
       expect(b.width).toBeGreaterThan(0);
-      expect(b.height).toBeGreaterThanOrEqual(4);
+      expect(b.height).toBeGreaterThanOrEqual(3);
     }
   });
 

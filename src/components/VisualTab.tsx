@@ -162,11 +162,31 @@ function renderSystemEvents(
   const events = sys.events;
   if (events.length === 0) return elements;
 
-  // Use the beam primitives calculator for reliable beam data
   const beamPrims = computeBeamPrimitives(events, y, LEFT_MARGIN);
   const beamedBeats = new Set(beamPrims.map((b) => b.beatIndex));
 
-  // Determine beats from max beatPosition
+  // ── Render BEAMS FIRST (behind stems) ──────────────────────
+  if (beamPrims.length > 0) {
+    elements.push(
+      <g key={`beams-${systemIndex}`} className="tab-beams" data-testid="tab-beams">
+        {beamPrims.map((bp) => (
+          <rect
+            key={`beam-${systemIndex}-${bp.measureIndex}-${bp.beatIndex}`}
+            data-testid="tab-beam"
+            className="tab-beam"
+            x={bp.x}
+            y={bp.y}
+            width={bp.width}
+            height={bp.height}
+            fill="currentColor"
+            stroke="none"
+          />
+        ))}
+      </g>,
+    );
+  }
+
+  // ── Render stems + markers ON TOP of beams ─────────────────
   const maxBp = Math.max(...events.map((e) => e.beatPosition ?? 0));
   const beats = Math.max(1, Math.ceil(maxBp / 0.25));
   const beatGroups: PositionedEvent[][] = Array.from({ length: beats }, () => []);
@@ -191,27 +211,6 @@ function renderSystemEvents(
     }
   }
 
-  // Render beams in a dedicated group, AFTER all markers and stems
-  if (beamPrims.length > 0) {
-    elements.push(
-      <g key={`beams-${systemIndex}`} className="tab-beams" data-testid="tab-beams">
-        {beamPrims.map((bp) => (
-          <rect
-            key={`beam-${systemIndex}-${bp.measureIndex}-${bp.beatIndex}`}
-            data-testid="tab-beam"
-            className="tab-beam"
-            x={bp.x}
-            y={bp.y}
-            width={bp.width}
-            height={bp.height}
-            fill="currentColor"
-            stroke="none"
-          />
-        ))}
-      </g>,
-    );
-  }
-
   return elements;
 }
 
@@ -227,13 +226,12 @@ function renderBeamedPair(
 ): React.ReactNode[] {
   const ax = LEFT_MARGIN + a.x;
   const bx = LEFT_MARGIN + b.x;
-  // Stems start at note position, end 2px into the beam rectangle
-  // for guaranteed visual overlap (no gap between stem and beam).
+  // Stems start at note position, extend through beam to a visible tip.
+  // Beams are rendered behind stems (z-order), so stem endpoints show.
   const aStemY = stemYForEvent(a, y);
   const bStemY = stemYForEvent(b, y);
-  // Beam centre: tabBottom + STEM_BELOW + MIN_STEM.
-  // Extend 3px past centre to overlap the beam's bottom half.
-  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM + 3;
+  // Beam centre + 5px: extends through the 3px beam to 2px visible tip below.
+  const stemEndY = tabBottom + STEM_BELOW + MIN_STEM + 5;
 
   return [
     <g key={`bp-${systemIndex}-${startIdx}`}>

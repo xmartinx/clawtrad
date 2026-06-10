@@ -17,7 +17,7 @@ export const LAYOUT = {
   SYSTEM_TOP_MARGIN: 20,    // px gap between systems
   MEASURE_GAP: 10,          // px gap between measures within a system
   MEASURE_PAD_LEFT: 8,      // px padding after left barline
-  MEASURE_PAD_RIGHT: 12,    // px padding before right barline
+  MEASURE_PAD_RIGHT: 14,    // px padding before right barline
   COL_WIDTH: 24,            // px per 1/8-note duration unit
   MIN_EVENT_WIDTH: 12,      // minimum px width for any event
   SYSTEM_HEIGHT: 22 * 4 + 12,  // STRING_SPACING * 4 + bottom pad
